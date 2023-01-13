@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <Nullable>disable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>Rumble.Platform.GuildService</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="Controllers" />
+      <Folder Include="Exceptions" />
+      <Folder Include="Models" />
+      <Folder Include="Services" />
+      <Folder Include="Utilities" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="platform-csharp-common" Version="1.2.60" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include=".gitlab\deploy-k8s.yaml" />
+      <Content Include=".gitlab\dev.values.yaml" />
+      <Content Include=".gitlab\prod.values.yaml" />
+      <Content Include=".gitlab\stage-a.values.yaml" />
+      <Content Include=".gitlab\stage-b.values.yaml" />
+    </ItemGroup>
+
+</Project>
