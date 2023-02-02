@@ -103,8 +103,7 @@ public class GuildService : PlatformMongoService<Guild>
 		Guild guild = SearchById(guildId);
 		return guild.Bans.Contains(playerId);
 	}
-	
-	
+
 	// Change leader
 	public void ChangeLeader(string oldLeaderId, string newLeaderId, string guildId)
 	{

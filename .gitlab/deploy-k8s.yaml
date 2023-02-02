@@ -3,7 +3,7 @@
   dependencies: []
   variables:
     KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
-    KUBE_NAMESPACE: "guild-service-41-dev"
+    KUBE_NAMESPACE: "guild-service-dev"
     KUBE_CONTEXT: "platform-services/platform-services-agent:platform-services"
   allow_failure: false
   script:
@@ -44,7 +44,7 @@ dev:
   stage: dev
   variables:
     KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
-    KUBE_NAMESPACE: "guild-service-41-dev"
+    KUBE_NAMESPACE: "guild-service-dev"
   tags:
     - cluster
   environment:
@@ -56,7 +56,7 @@ stage-a:
   stage: staging
   variables:
     KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
-    KUBE_NAMESPACE: "guild-service-41-stage-a"
+    KUBE_NAMESPACE: "guild-service-stage-a"
   tags:
     - cluster
   environment:
@@ -70,7 +70,7 @@ stage-b:
     - cluster
   variables:
     KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
-    KUBE_NAMESPACE: "guild-service-41-stage-b"
+    KUBE_NAMESPACE: "guild-service-stage-b"
   environment:
     name: stage-b
     url: https://stage-b.nonprod.tower.cdrentertainment.com/
@@ -80,7 +80,7 @@ stage-c:
   stage: staging
   variables:
     KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
-    KUBE_NAMESPACE: "guild-service-41-stage-c"
+    KUBE_NAMESPACE: "guild-service-stage-c"
   tags:
     - cluster
   environment:
