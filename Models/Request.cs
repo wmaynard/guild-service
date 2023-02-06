@@ -48,6 +48,16 @@ public class Request : PlatformCollectionDocument
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_TIMESTAMP)]
 	public long Timestamp { get; set; }
 
+	public Request(string name, string description, string guildId, string playerId, int level)
+	{
+		Name = name;
+		Description = description;
+		GuildId = guildId;
+		PlayerId = playerId;
+		Level = level;
+		Timestamp = Common.Utilities.Timestamp.UnixTime;
+	}
+
 	protected override void Validate(out List<string> errors)
 	{
 		errors = new List<string>();

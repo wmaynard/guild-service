@@ -18,7 +18,6 @@ public class Guild : PlatformCollectionDocument
     internal const string DB_KEY_LEADER            = "ldr";
     internal const string DB_KEY_MEMBERS           = "mbrs";
     internal const string DB_KEY_BANS              = "bans";
-    internal const string DB_KEY_CHAT_ROOM         = "chatrm";
 
     public const string FRIENDLY_KEY_NAME              = "name";
     public const string FRIENDLY_KEY_DESCRIPTION       = "description";
@@ -28,7 +27,6 @@ public class Guild : PlatformCollectionDocument
     public const string FRIENDLY_KEY_LEADER            = "leader";
     public const string FRIENDLY_KEY_MEMBERS           = "members";
     public const string FRIENDLY_KEY_BANS              = "bans";
-    public const string FRIENDLY_KEY_CHAT_ROOM         = "chatroom";
     
     [BsonElement(DB_KEY_NAME)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_NAME)]
@@ -40,8 +38,8 @@ public class Guild : PlatformCollectionDocument
 
     public enum GuildType
     {
-        Public,
         Private,
+        Public,
         Closed
     }
     [BsonElement(DB_KEY_TYPE)]
@@ -67,10 +65,19 @@ public class Guild : PlatformCollectionDocument
     [BsonElement(DB_KEY_BANS)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_BANS)]
     public List<string> Bans { get; set; } // player IDs
-    
-    [BsonElement(DB_KEY_CHAT_ROOM)]
-    [JsonInclude, JsonPropertyName(FRIENDLY_KEY_CHAT_ROOM)]
-    public string ChatRoom { get; set; }
+
+    public Guild(string name, string description, GuildType type, int levelRequirement, string leaderName, string leaderId)
+    {
+        Name = name;
+        Description = description;
+        Type = type;
+        LevelRequirement = levelRequirement;
+        Art = "";
+        Leader = leaderName;
+        Members = new List<Member>();
+        Members.Add(new Member(name: leaderName, playerId: leaderId, position: Member.Role.Leader));
+        Bans = new List<string>();
+    }
 
     protected override void Validate(out List<string> errors)
     {

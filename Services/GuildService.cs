@@ -13,7 +13,7 @@ public class GuildService : PlatformMongoService<Guild>
 	public GuildService() : base("guilds") {  }
     
 	// Search guild by name
-	public List<Guild> Search(string query)
+	public List<Guild> SearchByQuery(string query)
 	{
 		query = query.ToLower();
 		return _collection.Find(filter: guild => guild.Name.ToLower().Contains(query)).ToList();
@@ -83,7 +83,7 @@ public class GuildService : PlatformMongoService<Guild>
 		listWrites.Add(new UpdateOneModel<Guild>(filter, update));
 		_collection.BulkWrite(listWrites);
 	}
-	
+
 	// Unban member
 	public void UnbanMember(string playerId, string guildId)
 	{
@@ -118,7 +118,7 @@ public class GuildService : PlatformMongoService<Guild>
 		UpdateDefinition<Guild> updateOld = Builders<Guild>.Update.Set(guild => guild.Members[-1].Position, Member.Role.Officer);
 		FilterDefinition<Guild> filterNew = Builders<Guild>.Filter.Eq("Members.PlayerId", newLeaderId);
 		UpdateDefinition<Guild> updateNew = Builders<Guild>.Update.Set(guild => guild.Members[-1].Position, Member.Role.Leader);
-		FilterDefinition<Guild> filterLeader = Builders<Guild>.Filter.Empty;
+		FilterDefinition<Guild> filterLeader = Builders<Guild>.Filter.Eq(guild => guild.Id, guildId);
 		UpdateDefinition<Guild> updateLeader = Builders<Guild>.Update.Set(guild => guild.Leader, newLeaderName);
 
 		listWrites.Add(new UpdateOneModel<Guild>(filterOld, updateOld));
@@ -132,7 +132,8 @@ public class GuildService : PlatformMongoService<Guild>
 	{
 		List<WriteModel<Guild>> listWrites = new List<WriteModel<Guild>>();
 
-		FilterDefinition<Guild> filter = Builders<Guild>.Filter.Eq("Members.PlayerId", playerId);
+		FilterDefinition<Guild> filter = Builders<Guild>.Filter.Eq(guild => guild.Id, guildId);
+		filter &= Builders<Guild>.Filter.Eq("Members.PlayerId", playerId);
 		UpdateDefinition<Guild> update = Builders<Guild>.Update.Set(guild => guild.Members[-1].Position, position);
 
 		listWrites.Add(new UpdateOneModel<Guild>(filter, update));
