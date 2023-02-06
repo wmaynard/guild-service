@@ -5,6 +5,8 @@
         <Nullable>disable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>Rumble.Platform.GuildService</RootNamespace>
+        <AssemblyVersion>1.0.*</AssemblyVersion>
+        <Deterministic>false</Deterministic>
     </PropertyGroup>
 
     <ItemGroup>
