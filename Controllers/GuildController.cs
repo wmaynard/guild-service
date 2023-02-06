@@ -6,7 +6,7 @@ using Rumble.Platform.GuildService.Services;
 
 namespace Rumble.Platform.GuildService.Controllers;
 
-[ApiController, Route(template: "guild"), RequireAuth]
+[ApiController, Route(template: "guilds"), RequireAuth]
 public class GuildController : PlatformController
 {
 #pragma warning disable
