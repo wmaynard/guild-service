@@ -11,6 +11,9 @@ public class HistoryService : PlatformMongoService<History>
 	// Fetch history for a guild
 	public List<History> GetHistory(string guildId)
 	{
-		return _collection.Find(history => history.GuildId == guildId).ToList();
+		return _collection.Find(history => history.GuildId == guildId).ToList()
+		                  .Select(history => history)
+		                  .OrderBy(history => history.Timestamp)
+		                  .ToList();
 	}
 }

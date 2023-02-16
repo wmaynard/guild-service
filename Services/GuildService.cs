@@ -35,7 +35,7 @@ public class GuildService : PlatformMongoService<Guild>
 	}
 	
 	// Fetch member details
-	public Member CheckRole(string playerId)
+	public Member CheckPlayer(string playerId)
 	{
 		Guild guild = SearchByPlayerId(playerId);
 		Member member = guild.Members.Find(member => member.PlayerId == playerId);

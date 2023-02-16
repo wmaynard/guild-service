@@ -11,13 +11,19 @@ public class RequestService : PlatformMongoService<Request>
 #pragma warning restore
 	
 	public RequestService() : base(collection: "requests") {  }
-	
+
 	// Fetch requests for a guild
 	public List<Request> GetRequests(string guildId)
 	{
 		return _collection.Find(request => request.GuildId == guildId).ToList();
 	}
 	
+	// Fetch requests for a player
+	public List<Request> GetPlayerRequests(string playerId)
+	{
+		return _collection.Find(request => request.PlayerId == playerId).ToList();
+	}
+
 	// Accept request
 	public void AcceptRequest(string requestId)
 	{
