@@ -40,9 +40,9 @@ hpa:
   MemUtilizationPercentage: 60
   keda:
     enabled: true
-    requestsPerSecond: "5"
+    requestsPerSecond: "10"
     serverAddress: http://prometheus-server.gitlab-managed-apps.svc:80
-    filter: "exported_service"
+    filter: "exported_namespace"
 gitlab:
   app:
   env:
