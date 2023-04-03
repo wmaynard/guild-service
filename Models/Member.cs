@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Rumble.Platform.Common.Utilities;
 using MongoDB.Bson.Serialization.Attributes;
+using Rumble.Platform.Common.Attributes;
 using Rumble.Platform.Data;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -25,6 +26,7 @@ public class Member : PlatformCollectionDocument
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_NAME)]
 	public string Name { get; set; }
 	
+	[CompoundIndex(group: "INDEX_GROUP_GUILD", priority: 1)]
 	[BsonElement(DB_KEY_PLAYER_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_PLAYER_ID)]
 	public string PlayerId { get; set; }

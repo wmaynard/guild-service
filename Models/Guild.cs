@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using Rumble.Platform.Common.Attributes;
 using Rumble.Platform.Data;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -28,6 +29,8 @@ public class Guild : PlatformCollectionDocument
     public const string FRIENDLY_KEY_MEMBERS           = "members";
     public const string FRIENDLY_KEY_BANS              = "bans";
     
+    [AdditionalIndexKey(group: "INDEX_GROUP_GUILD", key: "_id", priority: 0)]
+    [CompoundIndex(group: "INDEX_GROUP_GUILD", priority: 1)]
     [BsonElement(DB_KEY_NAME)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_NAME)]
     public string Name { get; set; }
@@ -58,10 +61,12 @@ public class Guild : PlatformCollectionDocument
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_LEADER)]
     public string Leader { get; set; }
     
+    [CompoundIndex(group: "INDEX_GROUP_GUILD", priority: 1)]
     [BsonElement(DB_KEY_MEMBERS)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_MEMBERS)]
     public List<Member> Members { get; set; } // TODO member limit?
     
+    [CompoundIndex(group: "INDEX_GROUP_GUILD", priority: 1)]
     [BsonElement(DB_KEY_BANS)]
     [JsonInclude, JsonPropertyName(FRIENDLY_KEY_BANS)]
     public List<string> Bans { get; set; } // player IDs

@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using Rumble.Platform.Common.Attributes;
 using Rumble.Platform.Data;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -24,6 +25,7 @@ public class Request : PlatformCollectionDocument
 	public const string FRIENDLY_KEY_LEVEL       = "level";
 	public const string FRIENDLY_KEY_TIMESTAMP   = "timestamp";
     
+	[AdditionalIndexKey(group: "INDEX_GROUP_REQUEST", key: "_id", priority: 0)]
 	[BsonElement(DB_KEY_NAME)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_NAME)]
 	public string Name { get; set; }
@@ -32,10 +34,12 @@ public class Request : PlatformCollectionDocument
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_DESCRIPTION)]
 	public string Description { get; set; }
 	
+	[SimpleIndex]
 	[BsonElement(DB_KEY_GUILD_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_GUILD_ID)]
 	public string GuildId { get; set; }
 
+	[SimpleIndex]
 	[BsonElement(DB_KEY_PLAYER_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_PLAYER_ID)]
 	public string PlayerId { get; set; }

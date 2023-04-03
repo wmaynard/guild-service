@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using Rumble.Platform.Common.Attributes;
 using Rumble.Platform.Data;
 
 namespace Rumble.Platform.GuildService.Models;
@@ -16,6 +17,7 @@ public class History : PlatformCollectionDocument
 	public const string FRIENDLY_KEY_INTERNAL_LOG = "internalLog";
 	public const string FRIENDLY_KEY_TIMESTAMP    = "timestamp";
 	
+	[SimpleIndex]
 	[BsonElement(DB_KEY_GUILD_ID)]
 	[JsonInclude, JsonPropertyName(FRIENDLY_KEY_GUILD_ID)]
 	public string GuildId { get; set; }
