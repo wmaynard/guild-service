@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Rumble.Platform.Common.Attributes;
 using Rumble.Platform.Common.Web;
 using Rumble.Platform.GuildService.Models;
 using Rumble.Platform.GuildService.Services;
@@ -16,30 +17,34 @@ public class TopController : PlatformController
 #pragma warning restore
 	
 	// Search for player's guild
-	[HttpGet, Route("player")]
-	public ActionResult SearchByPlayer(string playerId)
+	[HttpGet, Route("player"), RequireAuth]
+	public ActionResult SearchByPlayer()
 	{
+		string playerId = Token.AccountId;
+		
 		return Ok(_guildService.SearchByPlayerId(playerId));
 	}
 	
 	// Search guilds by query
-	[HttpGet, Route("search")]
+	[HttpGet, Route("search"), RequireAuth]
 	public ActionResult Search(string query)
 	{
 		return Ok(_guildService.SearchByQuery(query));
 	}
 	
 	// Get guild info
-	[HttpGet, Route("info")]
+	[HttpGet, Route("info"), RequireAuth]
 	public ActionResult Info(string guildId)
 	{
 		return Ok(_guildService.SearchById(guildId));
 	}
 	
 	// Update guild info
-	[HttpPatch, Route("info")]
-	public ActionResult InfoEdit(Guild guild)
+	[HttpPatch, Route("info"), RequireAuth]
+	public ActionResult InfoEdit()
 	{
+		Guild guild = Require<Guild>(key: "guild");
+		
 		string requesterId = Token.AccountId;
 		Member requester = _guildService.CheckPlayer(requesterId);
 
@@ -47,7 +52,7 @@ public class TopController : PlatformController
 		{
 			return Problem($"Requester {requesterId} does not have permissions to guild info for guild {guild.Id}.");
 		}
-		
+
 		_guildService.UpdateGuild(guild);
 		
 		History log = new History(guildId: guild.Id, log: "Guild info was updated.", internalLog: $"Guild {guild.Id} info was updated by player {requesterId}.");
@@ -57,7 +62,7 @@ public class TopController : PlatformController
 	}
 
 	// Update member position
-	[HttpPatch, Route("position")]
+	[HttpPatch, Route("position"), RequireAuth]
 	public ActionResult PositionUpdate(string playerId, Member.Role position)
 	{
 		string requesterId = Token.AccountId;
@@ -85,7 +90,7 @@ public class TopController : PlatformController
 	}
 	
 	// Change leader
-	[HttpPatch, Route("leader")]
+	[HttpPatch, Route("leader"), RequireAuth]
 	public ActionResult PositionLeader(string newLeaderId)
 	{
 		string oldLeaderId = Token.AccountId;
@@ -114,7 +119,7 @@ public class TopController : PlatformController
 	}
 	
 	// Leave guild
-	[HttpPost, Route("leave")]
+	[HttpPost, Route("leave"), RequireAuth]
 	public ActionResult LeaveGuild()
 	{
 		string playerId = Token.AccountId;
@@ -154,10 +159,11 @@ public class TopController : PlatformController
 	}
 	
 	// Create guild
-	[HttpPost, Route("")]
-	public ActionResult CreateGuild(string name, string desc, Guild.GuildType type, int level, string leaderName)
+	[HttpPost, Route(""), RequireAuth]
+	public ActionResult CreateGuild(string name, string desc, Guild.GuildType type, int level)
 	{
 		string leaderId = Token.AccountId;
+		string leaderName = Token.ScreenName;
 
 		Guild existingGuild = _guildService.SearchByPlayerId(leaderId);
 
@@ -169,7 +175,13 @@ public class TopController : PlatformController
 		Guild guild = new Guild(name: name, description: desc, type: type, levelRequirement: level,
 		                        leaderName: leaderName, leaderId: leaderId);
 		// TODO check for inappropriate names
-		
+
+		Guild duplicate = _guildService.FindOne(g => g.Name == name);
+		if (duplicate != null)
+		{
+			return Problem($"Guild name {name} already exists.");
+		}
+			
 		_guildService.Create(guild);
 		
 		History log = new History(guildId: guild.Id, log: $"Guild has been created.", internalLog: $"Player {leaderId} has created guild {guild.Id}.");
@@ -179,7 +191,7 @@ public class TopController : PlatformController
 	}
 	
 	// Delete guild
-	[HttpDelete, Route("")]
+	[HttpDelete, Route(""), RequireAuth]
 	public ActionResult DeleteGuild(string guildId)
 	{
 		_guildService.Delete(guildId);
@@ -191,7 +203,7 @@ public class TopController : PlatformController
 	}
 	
 	// Expel member
-	[HttpPost, Route("expel")]
+	[HttpPost, Route("expel"), RequireAuth]
 	public ActionResult ExpelGuild(string playerId)
 	{
 		string requesterId = Token.AccountId;
@@ -219,7 +231,7 @@ public class TopController : PlatformController
 	}
 
 	// Ban member
-	[HttpPost, Route("ban")]
+	[HttpPost, Route("ban"), RequireAuth]
 	public ActionResult BanPlayer(string playerId)
 	{
 		string requesterId = Token.AccountId;
@@ -247,7 +259,7 @@ public class TopController : PlatformController
 	}
 	
 	// Remove ban
-	[HttpPost, Route("unban")]
+	[HttpPost, Route("unban"), RequireAuth]
 	public ActionResult UnbanPlayer(string playerId)
 	{
 		string requesterId = Token.AccountId;

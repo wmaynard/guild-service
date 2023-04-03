@@ -18,7 +18,7 @@ public class RequestController : PlatformController
 #pragma warning restore
 	
 	// View guild requests
-	[HttpGet, Route("")]
+	[HttpGet, Route(""), RequireAuth]
 	public ActionResult Requests()
 	{
 		string playerId = Token.AccountId;
@@ -40,7 +40,7 @@ public class RequestController : PlatformController
 	}
 	
 	// Accept guild request
-	[HttpPost, Route("accept")]
+	[HttpPost, Route("accept"), RequireAuth]
 	public ActionResult RequestsAccept(string requestId)
 	{
 		string playerId = Token.AccountId;
@@ -71,7 +71,7 @@ public class RequestController : PlatformController
 	}
 	
 	// Reject guild request
-	[HttpPost, Route("reject")]
+	[HttpPost, Route("reject"), RequireAuth]
 	public ActionResult RequestsReject(string requestId)
 	{
 		string playerId = Token.AccountId;
@@ -98,10 +98,11 @@ public class RequestController : PlatformController
 	}
 	
 	// Send guild request
-	[HttpPost, Route("")]
-	public ActionResult RequestsSend(string name, string desc, string guildId, int level)
+	[HttpPost, Route(""), RequireAuth]
+	public ActionResult RequestsSend(string desc, string guildId, int level)
 	{
 		string playerId = Token.AccountId;
+		string name = Token.ScreenName;
 		Guild existingGuild = _guildService.SearchByPlayerId(playerId);
 		if (existingGuild != null)
 		{
@@ -116,6 +117,11 @@ public class RequestController : PlatformController
 		}
 
 		Guild guild = _guildService.SearchById(guildId);
+
+		if (level < guild.LevelRequirement)
+		{
+			return Problem($"Player {playerId} does not meet guild {guildId}'s level requirement.");
+		}
 
 		if (guild.Type == Guild.GuildType.Public)
 		{

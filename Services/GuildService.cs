@@ -6,10 +6,6 @@ namespace Rumble.Platform.GuildService.Services;
 
 public class GuildService : PlatformMongoService<Guild>
 {
-#pragma warning disable
-	private readonly DynamicConfig _dynamicConfig;
-#pragma warning restore
-	
 	public GuildService() : base("guilds") {  }
     
 	// Search guild by name
