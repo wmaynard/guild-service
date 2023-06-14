@@ -178,4 +178,5 @@ restart_service:
 include:
   - local: ./.gitlab/deploy-k8s.yaml
     rules:
-      - if: $RESTART_SERVICE == 'false'
+      - if: $RESTART_SERVICE == "true"
+        when: never
