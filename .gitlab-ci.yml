@@ -176,4 +176,4 @@ restart_service:
 
 
 include:
-  - local: ./.gitlab/deploy-k8s.yaml
+  - '/.gitlab/deploy-k8s.yaml'
