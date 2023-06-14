@@ -179,4 +179,3 @@ include:
   - local: ./.gitlab/deploy-k8s.yaml
     rules:
       - if: $RESTART_SERVICE == "false" || $RESTART_SERVICE == ""
-        when: always
