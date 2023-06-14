@@ -162,7 +162,7 @@ restart_service:
         kubectl get pods -o yaml -n $NAMESPACE | kubectl delete -f -
       fi
   rules:
-    - if: 'RESTART_SERVICE == true'
+    - if: '$RESTART_SERVICE == "true"'
       when: always
 
 
