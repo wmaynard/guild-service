@@ -32,8 +32,10 @@ variables:
     options:
       - "false"
       - "true"
+    description: "Run the restart service script"
   RESTART_SERVICE_ENV:
     value: "dev"
+    description: "Environment to restart service in"
     options:
       - "dev"
       - "stage-a"
