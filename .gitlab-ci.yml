@@ -84,6 +84,8 @@ build_app:
   rules:
     - if: $CI_COMMIT_TAG
       when: never
+    - if: '$RESTART_SERVICE == "true"'
+      when: never
     - when: always
 
 sonarqube-check:
@@ -111,7 +113,10 @@ sonarqube-check:
   allow_failure: true
   only:
     - merge_requests
-    - main 
+    - main
+  rules:
+    - if: '$RESTART_SERVICE == "true"'
+      when: never
 
 build_image:
   stage: build
@@ -127,6 +132,8 @@ build_image:
     - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA --destination $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CURRENTVERSION
   rules:
     - if: '$BUILD_DISABLED'
+      when: never
+    - if: '$RESTART_SERVICE == "true"'
       when: never
     - if: $CI_COMMIT_TAG
       when: never
