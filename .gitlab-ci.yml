@@ -168,6 +168,7 @@ restart_service:
       echo "Using $RUMBLE_CONTEXT to delete all pods from $RUMBLE_NAMESPACE"
     - |
       if [ ! -z "$RUMBLE_NAMESPACE" ]; then
+        kubectl config use-context $RUMBLE_CONTEXT
         kubectl get pods -o yaml -n $RUMBLE_NAMESPACE | kubectl delete -f -
       fi
   rules:
