@@ -91,6 +91,7 @@ build_app:
 sonarqube-check:
   stage: scan
   image: mcr.microsoft.com/dotnet/sdk:6.0
+  allow_failure: true
   variables:
     SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
     GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
@@ -98,7 +99,7 @@ sonarqube-check:
     key: "${CI_JOB_NAME}"
     paths:
       - .sonar/cache
-  script: 
+  script:
       - "apt-get update"
       - "apt-get install --yes openjdk-11-jre"
       - "dotnet tool install --global dotnet-sonarscanner"
@@ -110,10 +111,12 @@ sonarqube-check:
       - "dotnet sonarscanner begin /k:\"rumble-${CI_PROJECT_TITLE}\" /d:sonar.login=\"$SONAR_TOKEN\" /d:\"sonar.host.url=$SONAR_HOST_URL\" "
       - "dotnet build"
       - "dotnet sonarscanner end /d:sonar.login=\"$SONAR_TOKEN\""
-  allow_failure: true
-  only:
-    - merge_requests
-    - main
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: '$RESTART_SERVICE == "true"'
+      when: never
+    - when: always
 
 build_image:
   stage: build
@@ -143,19 +146,19 @@ restart_service:
     name: bitnami/kubectl
   script:
     - |
-      if [$RESTART_SERVICE_ENV == "dev" ]; then
+      if [ $RESTART_SERVICE_ENV == "dev" ]; then
         export RUMBLE_NAMESPACE=guild-service-dev
         export RUMBLE_CONTEXT=platform-services/platform-services-agent:platform-services
-      elif [$RESTART_SERVICE_ENV == "stage-a"]; then
+      elif [ $RESTART_SERVICE_ENV == "stage-a" ]; then
         export RUMBLE_NAMESPACE=guild-service-stage-a
         export RUMBLE_CONTEXT=platform-services/platform-services-agent:platform-services
-      elif [$RESTART_SERVICE_ENV == "stage-b"]; then
+      elif [ $RESTART_SERVICE_ENV == "stage-b" ]; then
         export RUMBLE_NAMESPACE=guild-service-stage-b
         export RUMBLE_CONTEXT=platform-services/platform-services-agent:platform-services
-      elif [$RESTART_SERVICE_ENV == "prod-a1"]; then
+      elif [ $RESTART_SERVICE_ENV == "prod-a1" ]; then
         export RUMBLE_NAMESPACE=guild-service
         export RUMBLE_CONTEXT=platform-services/platform-services-agent:prod-a1-platform-services
-      elif [$RESTART_SERVICE_ENV == "prod-a2"]; then
+      elif [ $RESTART_SERVICE_ENV == "prod-a2" ]; then
         export RUMBLE_NAMESPACE=guild-service
         export RUMBLE_CONTEXT=platform-services/platform-services-agent:prod-a2-platform-services
       else
