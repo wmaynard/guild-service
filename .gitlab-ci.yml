@@ -33,6 +33,7 @@ variables:
       - "false"
       - "true"
   RESTART_SERVICE_ENV:
+    value: "dev"
     options:
       - "dev"
       - "stage-a"
