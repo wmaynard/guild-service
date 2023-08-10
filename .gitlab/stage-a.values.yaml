@@ -34,7 +34,7 @@ application:
   secretChecksum:
 hpa:
   enabled: false
-  minReplicas: 1
+  minReplicas: 2
   maxReplicas: 2
   CPUUtilizationPercentage: 60
   MemUtilizationPercentage: 60
@@ -42,7 +42,6 @@ hpa:
     enabled: true
     requestsPerSecond: "10"
     serverAddress: http://prometheus-server.gitlab-managed-apps.svc:80
-    filter: "exported_namespace"
 gitlab:
   app:
   env:
