@@ -60,7 +60,7 @@ service:
   internalPort: 8080
 ingress:
   enabled: true
-  path: "/guild"
+  path: /guild
   tls:
     enabled: false
     acme: false
