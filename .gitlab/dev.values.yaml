@@ -60,16 +60,16 @@ service:
   internalPort: 8080
 ingress:
   enabled: true
-  className: nginx
+  className: pvp-nginx
   path: /guild
   tls:
     enabled: false
     acme: false
     secretName: "guild-service-dev"
     useDefaultSecret: false
-  annotations:
-    nginx.ingress.kubernetes.io/client-body-buffer-size: 10m
-    nginx.ingress.kubernetes.io/service-upstream: "true"
+  annotations: {}
+    # nginx.ingress.kubernetes.io/client-body-buffer-size: 10m
+    # nginx.ingress.kubernetes.io/service-upstream: "true"
   modSecurity:
     enabled: false
     secRuleEngine: "DetectionOnly"
