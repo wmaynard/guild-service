@@ -2,12 +2,13 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: {{ template "fullname" . }}
+  namespace: {{ .Release.namespace }}
 spec:
   entryPoints:
     - web
   routes:
     - kind: Rule
-      match: Host(`{{ template "hostname" .Values.service.url }}`) && PathPrefix(`/guild`)
+      match: Host(`{{ template "hostname" .Values.service.url }}`) && PathPrefix(`/guild/`)
       services:
         - name: {{ template "fullname" . }}
           namespace: {{ .Release.namespace }}
