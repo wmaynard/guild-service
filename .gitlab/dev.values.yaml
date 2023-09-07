@@ -53,7 +53,7 @@ service:
   annotations: {}
   name: guild-dev # 15 character limit..
   type: NodePort
-  url: 
+  url: dev.nonprod.tower.cdrentertainment.com
   additionalHosts:
   commonName: 
   externalPort: 5000
