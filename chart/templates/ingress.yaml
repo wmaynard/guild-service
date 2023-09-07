@@ -6,7 +6,7 @@ spec:
   entryPoints:
     - web
   routes:
-  - match: Host(`{{ template "hostname" .Values.service.url }}`) && PathPrefix(`{{ .Values.ingress.path | default "/" | quote }}`)
+  - match: Host(`{{ template "hostname" .Values.service.url }}`) && PathPrefix(`{{ .Values.ingress.path | default "/" }}`)
     kind: Rule
     services:
     - name: {{ template "fullname" . }}
