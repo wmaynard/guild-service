@@ -60,6 +60,7 @@ service:
   internalPort: 8080
 ingress:
   enabled: true
+  className: nginx
   path: /guild
   tls:
     enabled: false
