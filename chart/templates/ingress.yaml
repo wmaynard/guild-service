@@ -2,11 +2,13 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: {{ template "fullname" . }}
+  annotations:
+    "kubernetes.io/ingress.class": "traefik"
 spec:
   entryPoints:
     - web
   routes:
-  - match: Host(`{{ template "hostname" .Values.service.url }}`) && PathPrefix(`{{ .Values.ingress.path | default "/" }}`)
+  - match: Host(`{{ template "hostname" .Values.service.url }}`) && PathPrefix(`/guild`)
     kind: Rule
     services:
     - name: {{ template "fullname" . }}
