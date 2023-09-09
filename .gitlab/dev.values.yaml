@@ -60,7 +60,7 @@ service:
   internalPort: 8080
 ingress:
   enabled: true
-  className: pvp-nginx
+  className: nginx
   path: /guild
   tls:
     enabled: false
