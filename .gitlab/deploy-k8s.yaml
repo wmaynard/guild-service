@@ -28,7 +28,7 @@
   - auto-deploy ensure_namespace
   - auto-deploy create_secret
   - >
-    curl --location --http1.1 --request PATCH "https://grafana.rumblegames.com/api/annotations" --header 'Content-Type: application/json' --header "Authorization: Bearer $GRAFANA_TOKEN" --data "${PAYLOAD}" || true
+    curl --location --http1.1 --request POST "https://grafana.rumblegames.com/api/annotations" --header 'Content-Type: application/json' --header "Authorization: Bearer $GRAFANA_TOKEN" --data "${PAYLOAD}" || true
   - auto-deploy deploy
   rules:
   - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
