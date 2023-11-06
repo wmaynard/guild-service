@@ -40,9 +40,8 @@ hpa:
   MemUtilizationPercentage: 60
   keda:
     enabled: true
-    requestsPerSecond: "10"
+    requestsPerSecond: 10
     serverAddress: http://prometheus-server.gitlab-managed-apps.svc:80
-    scaleOnMemory: true
     MemUtilizationPercentage: 95
 gitlab:
   app:
