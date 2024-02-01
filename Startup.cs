@@ -10,6 +10,7 @@ public class Startup : PlatformStartup
 	    .SetProjectOwner(Owner.Will)
 	    .SetTokenAudience(Audience.GuildService)
 	    .SetRegistrationName("Guild Service")
+	    .DisableFeatures(CommonFeature.ConsoleObjectPrinting)
 #if DEBUG
         .SetPerformanceThresholds(warnMS: 5_000, errorMS: 20_000, criticalMS: 300_000);
 #else
