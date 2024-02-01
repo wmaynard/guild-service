@@ -7,9 +7,9 @@ namespace Rumble.Platform.GuildService;
 public class Startup : PlatformStartup
 {
 	protected override PlatformOptions ConfigureOptions(PlatformOptions options) => options
-	    .SetProjectOwner(Owner.Nathan)
+	    .SetProjectOwner(Owner.Will)
 	    .SetTokenAudience(Audience.GuildService)
-	    .SetRegistrationName("Guild")
+	    .SetRegistrationName("Guild Service")
 #if DEBUG
         .SetPerformanceThresholds(warnMS: 5_000, errorMS: 20_000, criticalMS: 300_000);
 #else
