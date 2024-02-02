@@ -6,10 +6,11 @@ using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Models;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Common.Web;
-using Rumble.Platform.GuildService.Models;
-using Rumble.Platform.GuildService.Services;
+using Rumble.Platform.Data;
+using Rumble.Platform.Guilds.Models;
+using Rumble.Platform.Guilds.Services;
 
-namespace Rumble.Platform.GuildService.Controllers;
+namespace Rumble.Platform.Guilds.Controllers;
 
 [ApiController, Route("guild"), RequireAuth]
 public class TopController : PlatformController
@@ -20,12 +21,13 @@ public class TopController : PlatformController
     private readonly HistoryService _history;
     #pragma warning restore
     
-    [HttpPost, Route("create")] // TODO: Needs to be admin
+    [HttpPost, Route("create"), RequireAuth(AuthType.ADMIN_TOKEN)] // TODO: Needs to be admin
     public ActionResult Create()
     {
         Guild guild = Require<Guild>("guild");
-
-        _guilds.Create(guild, Token.AccountId);
+        string accountId = Require<string>(TokenInfo.FRIENDLY_KEY_ACCOUNT_ID);
+        
+        _guilds.Create(guild, accountId);
 
         return Ok(guild);
     }
@@ -35,26 +37,25 @@ public class TopController : PlatformController
     {
         string id = Require<string>("guildId");
 
-        GuildMember lastActivity = _history.FindLastActivity(Token.AccountId);
-        if ((lastActivity?.CreatedOn ?? 0) > Timestamp.OneDayAgo)
-            return new BadRequestObjectResult(lastActivity)
-            {
-                StatusCode = (int)HttpStatusCode.TooManyRequests
-            };
+        // Cooldown disabled for MVP
+        // GuildMember lastActivity = _history.FindLastActivity(Token.AccountId);
+        // if ((lastActivity?.CreatedOn ?? 0) > Timestamp.OneDayAgo)
+        //     return new BadRequestObjectResult(lastActivity)
+        //     {
+        //         StatusCode = (int)HttpStatusCode.TooManyRequests
+        //     };
 
-        GuildMember member = _guilds.Join(id, Token.AccountId);
+        Guild guild = _guilds.Join(id, Token.AccountId);
 
-        return Ok(member);
-
+        return Ok(guild);
     }
 
     [HttpPatch, Route("approve")]
     public ActionResult Approve()
     {
-        string guildId = Require<string>("guildId");
         string accountId = Require<string>(TokenInfo.FRIENDLY_KEY_ACCOUNT_ID);
 
-        GuildMember output = _members.ApproveApplication(guildId, accountId, Token.AccountId);
+        GuildMember output = _members.ApproveApplication(accountId, Token.AccountId);
 
         return Ok(output);
     }
@@ -62,19 +63,32 @@ public class TopController : PlatformController
     [HttpDelete, Route("leave")]
     public ActionResult Leave()
     {
-        GuildMember output = _members.Leave(Token.AccountId);
+        _members.Leave(Token.AccountId);
 
-        return Ok(output);
+        return Ok();
     }
 
+    // TODO: Guild chat mute?
+    // TODO: Add a ban system
     [HttpDelete, Route("kick")]
     public ActionResult Kick()
     {
         string accountId = Require<string>(TokenInfo.FRIENDLY_KEY_ACCOUNT_ID);
 
-        GuildMember kicked = _members.Leave(accountId, kickedBy: Token.AccountId);
+        _members.Leave(accountId, kickedBy: Token.AccountId);
 
-        return Ok(kicked);
+        return Ok();
+    }
+
+    [HttpPatch, Route("rank")]
+    public ActionResult Demote()
+    {
+        string accountId = Require<string>(TokenInfo.FRIENDLY_KEY_ACCOUNT_ID);
+        bool isPromotion = Require<bool>("isPromotion");
+
+        GuildMember demoted = _members.AlterRank(accountId, Token.AccountId, isPromotion);
+
+        return Ok(demoted);
     }
 
     [HttpGet, Route("search")]
@@ -85,8 +99,19 @@ public class TopController : PlatformController
     {
         string guildId = Require<string>("guildId");
 
-        Guild info = _guilds.FromId(guildId);
+        Guild output = _guilds.FromId(guildId);
+        bool isGuildMember = output.Members.Any(member => member.AccountId == Token.AccountId && member.Rank > Rank.Applicant);
+        if (!isGuildMember)
+            output.Members = output.Members
+                .Where(member => member.Rank > Rank.Applicant)
+                .ToArray();
 
-        return Ok(info);
+        return Ok(output);
+    }
+
+    [HttpPatch, Route("update")]
+    public ActionResult EditGuild()
+    {
+        return Ok();
     }
 }

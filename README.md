@@ -12,153 +12,215 @@ A `member` consists of a `name`, a `playerId`, a `position`, and a `lastActive` 
 
 A `history` consists of a `guildId`, a `log`, an `internalLog`, and a `timestamp`.
 
-# Required Environment Variables
-|                  Variable | Description                                                                            |
-|--------------------------:|:---------------------------------------------------------------------------------------|
-|                  GRAPHITE | Link to hosted _graphite_ for analytics and monitoring.                                |
-|                LOGGLY_URL | Link to _Loggly_ to analyze logs in greater detail.                                    |
-|              MONGODB_NAME | The _MongoDB_ name which the service connects to.                                      |
-|               MONGODB_URI | The connection string for the environment's MongoDB.                                   |
-|          RUMBLE_COMPONENT | The name of the service.                                                               |
-|         RUMBLE_DEPLOYMENT | Signifies the deployment environment.                                                  |
-|                RUMBLE_KEY | Key to validate for each deployment environment.                                       |
-|   RUMBLE_TOKEN_VALIDATION | Link to current validation for player tokens.                                          |
-| RUMBLE_TOKEN_VERIFICATION | Link to current validation for admin tokens. Will include player tokens in the future. |
-|           VERBOSE_LOGGING | Logs in greater detail.                                                                |
-
 # Glossary
-|              Term | Description                                                                                           |
-|------------------:|:------------------------------------------------------------------------------------------------------|
-|      (Guild) Name | An unique player-friendly identifier for a guild.                                                     |
-|       Description | A description that allows guild management to say something about themselves.                         |
-|              Type | A setting that allows guild management to control how players can or cannot join or apply to a guild. |
-| Level Requirement | A level requirement for all new applicants to the guild.                                              |
-|               Art | An optional identifier for a guild art/icon.                                                          |
-|            Leader | The guild leader's screenname.                                                                        |
-|           Members | The members that are part of the guild.                                                               |
-|              Bans | Players who are banned from a guild; they cannot rejoin or apply unless removed from the list.        |
-|            Member | A member that is part of a guild.                                                                     |
-|     (Member) Name | The member's screenname.                                                                              |
-|          PlayerId | An unique identifier for a player.                                                                    |
-|          Position | A role that is given to a member in a guild. This determines their privileges.                        |
-|        LastActive | A timestamp to determine when the member was last active.                                             |
-|           History | A means of logs for both guild use and internal use.                                                  |
-|           GuildId | An identifier to link a log with a guild.                                                             |
-|               Log | A guild facing log to show members changes and activities of their guild.                             |
-|       InternalLog | An internal facing log that is in more detail for CS use.                                             |
-|         Timestamp | The timestamp at which the event detailed in the log occurred.                                        |
 
-# Using the Service
-All non-health endpoints require a valid token from `token-service`. The admin endpoints require a valid admin token.
-Requests to these endpoints should have an `Authorization` header with a `Bearer {token}`, where token is the aforementioned `token-service` token.
+| Term      | Definition                                                                                                                                                                                                             |
+|:----------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Access    | How "open" a guild is.  Guilds can be Public (anyone can join), Closed (requires application), or Private (requires invite).  Private guilds never show up in Search.                                                  |
+| Applicant | The lowest form of Member.  Applicants can not participate in Chat.  Applicants can be members of any number of guilds until an application is accepted by a guild, at which point, previous applications are deleted. |
+| Ban       | An upgraded Kick.  Bans entirely prevent account IDs from ever discovering the guild, preventing reapplication / rejoining.  Very useful to stop abuse where someone is kicked, changes their name, and rejoins.       | 
+| Chat      | Shorthand for "Guild Chat".  Chat is managed entirely on chat-service, and is a private room that is updated by guild-service.                                                                                         |
+| Elder     | Someone who's seen as a valued Member, but not trustworthy enough to be an Officer.                                                                                                                                    |
+| Guild     | A profile document shared between a group of players.                                                                                                                                                                  |
+| History   | A complete record of every user's various memberships, including promotions or demotions, for the last six months.                                                                                                     |
+| Kick      | Removes a Member from the Guild.  In order to kick, a player needs to be of higher rank than the player they're removing.                                                                                              |
+| Leader    | The player with supreme power over the guild.  Only one leader can exist in a guild at a time.  Special rules apply to leaders regarding required activity and leaving the guild, which will be covered below.         |
+| Member    | Standard player in a guild.  Members have no ability to manage the guild, but can participate in all guild activities.                                                                                                 |
+| Officer   | Officers help manage guild members and are able to kick players out, promote or demote, and effectively do everything a leader could at one level down.  Officers can not impact other officers with their actions.    |
+| Rank      | Ranks include, in order: Applicant, Member, Elder, Officer, Leader.  There is room to add more if needed at a later date.                                                                                              |
+| Search    | Fuzzy scan of available guilds.  Searches scan guild names, descriptions, and language / region.                                                                                                                       |
 
-All `timestamps` in the service are in the format of a `Unix timestamp`. This is to allow consistency and reduce confusion between time zones.
+# Guild Management
 
-# Endpoints
-All endpoints are reached with the base route `/guild/`. Any following endpoints listed are appended on to the base route.
+## Creating a Guild (Admin)
 
-**Example**: `GET /guild/health`
+Because guild creation is gated by resource spend, this endpoint must be routed through the game server and passed an admin token to complete.  Guild names must be unique.  Creating a new guild forces the player to leave any other guild they were a part of, and they are placed into the guild as its leader.
 
-## Top Level
-All non-health endpoints require a valid standard token.
-
-| Method | Endpoint    | Description                                              | Required Parameters                                          | Optional Parameters |
-|-------:|:------------|:---------------------------------------------------------|:-------------------------------------------------------------|:--------------------|
-|    GET | `/health`   | Health check on the status of the relevant microservices |                                                              |                     |
-|    GET | `/player`   | Search for a guild that a player is in                   |                                                              |                     |
-|    GET | `/search`   | Search for a list of guilds matching query               | *string*`query`                                              |                     |
-|    GET | `/info`     | Get guild information                                    | *string*`guildId`                                            |                     |
-|  PATCH | `/info`     | Modify guild information                                 | *Guild* `guild`                                              |                     |
-|  PATCH | `/position` | Change a member's role in the guild                      | *string*`playerId` *Role*`position`                          |                     |
-|  PATCH | `/leader`   | Change guild leader                                      | *string*`newLeaderId`                                        |                     |
-|   POST | `/leave`    | Leaves guild                                             |                                                              |                     |
-|   POST | `/`         | Creates guild                                            | *string*`name` *string*`desc` *GuildType*`type` *int*`level` |                     |
-| DELETE | `/`         | Deletes guild; leader must be the only member            | *string*`guildId`                                            |                     |
-|   POST | `/expel`    | Expels a member from the guild                           | *string*`playerId`                                           |                     |
-|   POST | `/ban`      | Bans a player from the guild                             | *string*`playerId`                                           |                     |
-|   POST | `/unban`    | Unbans a player from the guild                           | *string*`playerId`                                           |                     |
-
-### Notes
-*PATCH*, *POST*, and *DELETE* requests check for appropriate guild permissions by using the token from the player.
-
-**PATCH /info Request Body Example**
 ```
+POST /create
 {
     "guild": {
-        "name": "GuildName",
-        "description": "GuildDescription",
-        "type": 1,
-        "levelRequirement": 10,
-        "art": "ArtName",
-        "leader": "GuildLeader",
+        "name": "Avalanche",
+        "language": "en-US",
+        "region": "us",
+        "access": 0,                                   // 0: Public, 1: Closed, 2: Private
+        "requiredLevel": 10,                           // Stubbed!  Won't do anything, but it's in the roadmap
+        "description": "Lorem ipsum dolor sit amet",
+        "iconData": {                                  // Platform has no idea what this data is; purely for client usage.  Can be any JSON.
+            "layer1": "atlas[foo]",
+            "layer2": "atlas[bar]"
+        }
+    }
+}
+
+Response:
+HTTP 200
+{
+    "guild": {
+        "name": "Avalanche",
+        "language": "en-US",
+        "region": "us",
+        "access": 0,
+        "requiredLevel": 10,
+        "description": "Lorem ipsum dolor sit amet",
+        "iconData": {
+            "layer1": "atlas[foo]",
+            "layer2": "atlas[bar]"
+        },
         "members": [
             {
-                "name": "GuildLeader",
-                "playerId": "63b743563090a47d42146b1a",
-                "position": 2,
-                "lastActive": 1680332400
-            },
-            {
-                "name": "GuildMember",
-                "playerId": "63b743563090a47d42146b1b",
-                "position": 0,
-                "lastActive": 1680320000
+                "accountId": "deadbeefdeadbeefdeadbeef",
+                "approvedBy": null,
+                "updatedBy": null,
+                "kickedBy": null,
+                "guildId": null,
+                "joinedOn": 1706858868,
+                "leftOn": 0,
+                "lastActive": 0,
+                "rank": 10,
+                "rankVerbose": "Leader",
+                "id": "65bc9974db681ef3687b48f1",
+                "createdOn": 1706858868
             }
         ],
-        "bans": [
-            "63b743563090a47d42146b1e",
-            "63b743563090a47d42146b1f"
-        ]
+        "id": null,
+        "createdOn": 1706861398
+    }
+}
+
+Notable Error: Guild name is not unique
+HTTP 400
+{
+    "message": "Unique constraint violated; operation cannot proceed",
+    "errorCode": "PLATF-0201: InvalidRequestData"
+}
+```
+
+## Joining a Guild
+
+Sucessfully joining a guild forces players out of existing membership, if any.  For Closed guilds, this happens on application approval.
+
+* Open Guild: Player is added to the guild and chat immediately.
+* Closed Guild: Player is added to the guild as an applicant.  An officer must approve them before they become an official member.
+* Private Guild: Stubbed / not currently supported; will require an invitation to join a guild.
+
+Currently, guilds have no member cap (coming soon).
+
+```
+POST /join
+{
+    "guildId": "65bca0705a1498d3a4d22d7c"
+}
+
+Response:
+HTTP 200
+{
+    "guild": { ... }
+}
+```
+
+## Leaving a Guild
+
+Leaving is incredibly simple; hitting this endpoint will remove ALL membership for the calling player.
+
+```
+DELETE /leave
+
+Response:
+HTTP 204 (empty)
+```
+
+## Kicking a Guild Member
+
+Similarly simple, the only data point needed is the target account ID.
+
+```
+DELETE /kick?accountId=deadbeefdeadbeefdeadbeef
+
+Response:
+HTTP 204 (empty)
+
+Notable Error: Requesting player does not have permission to kick
+HTTP 400
+{
+    "message": "Unable to affect player; requester is not an officer.",
+    "errorCode": "PLATF-0101: Unauthorized"
+}
+```
+
+## Guild Details
+
+Viewing guild details requires a `guildId`.  You can view guilds you're not a member of, including member lists, but you can only see the applicant list for one you _are_ a member of.
+
+Unlike some of the endpoints you've seen so far, the `guildId` here is required because it saves an extra database hit, whereas comparing the relationship between two players requires two lookups even if the ID is provided.
+
+```
+GET {base url}?guildId=65bca0705a1498d3a4d22d7c
+
+Response:
+HTTP 200{
+    "guild": {
+        "name": "Avalanche",
+        "language": "en-US",
+        "region": "us",
+        "access": 0,
+        "requiredLevel": 10,
+        "description": "Lorem ipsum dolor sit amet",
+        "iconData": {
+            "layer1": "atlas[foo]",
+            "layer2": "atlas[bar]"
+        },
+        "members": [ ... ],
+        "id": 65bca0705a1498d3a4d22d7c,
+        "createdOn": 1706861398
     }
 }
 ```
 
-**Role Enum**
+## Guild Search
+
+Not currently implemented.  The endpoint is just a stub and returns all guilds.
+
 ```
-public enum Role
+GET /search?terms=foo%20bar
+
+Response:
+HTTP 200
 {
-    Member,
-    Officer,
-    Leader
+    "guilds": [ ... ]
 }
 ```
 
-**GuildType Enum**
+## Approving Applicants
+
+Any officer can approve applicants.  Applicants are a rank only seen in Closed guilds.
+
 ```
-public enum GuildType
+PATCH /approve
 {
-    Private,
-    Public,
-    Closed
+    "accountId": "65bae6cede38ba339d04b7e8"
+}
+
+Response:
+HTTP 200
+{
+    "guildMember": {
+        "accountId": "65bae6cede38ba339d04b7e8",
+        "approvedBy": "deadbeefdeadbeefdeadbeef",
+        "updatedBy": null,
+        "kickedBy": null,
+        "guildId": "65bca0705a1498d3a4d22d7c",
+        "joinedOn": 1706861850,
+        "leftOn": 0,
+        "lastActive": 0,
+        "rank": 1,
+        "rankVerbose": "Member",
+        "id": "65bca51a5536aadcdbb91e05",
+        "createdOn": 1706861850
+    }
 }
 ```
 
+# Guild Chat
 
-## Request
-All non-health endpoints require a valid standard token.
-
-| Method | Endpoint           | Description                                              | Required Parameters                           | Optional Parameters |
-|-------:|:-------------------|:---------------------------------------------------------|:----------------------------------------------|:--------------------|
-|    GET | `/requests/health` | Health check on the status of the relevant microservices |                                               |                     |
-|   POST | `/accept`          | Accepts a request to join the guild                      | *string*`requestId`                           |                     |
-|   POST | `/reject`          | Rejects a request to join the guild                      | *string*`requestId`                           |                     |
-|   POST | `/`                | Creates a request to join the guild                      | *string*`desc` *string*`guildId` *int*`level` |                     |
-
-## Admin
-All non-health endpoints require a valid admin token.
-
-| Method | Endpoint        | Description                                              | Required Parameters | Optional Parameters |
-|-------:|:----------------|:---------------------------------------------------------|:--------------------|:--------------------|
-|    GET | `/admin/health` | Health check on the status of the relevant microservices |                     |                     |
-
-
-# Future Updates
-- Admin endpoints depending on CS needs will be implemented when details are flushed out
-- Recommended guilds
-- Automatic leader change if leader is inactive
-- Ban list to show current player screenname instead of id
-- Prevent inappropriate guild names
-- Member limits
-
-# Troubleshooting
-- Any issues should be recorded as a log in _Loggly_.
+Not currently implemented.  Chat V2 will handle all Guild Chat as a private room; more details will be found here as to how guild-service modifies the chat-service room once added.

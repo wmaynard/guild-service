@@ -4,9 +4,9 @@ using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Minq;
 using Rumble.Platform.Common.Utilities;
-using Rumble.Platform.GuildService.Models;
+using Rumble.Platform.Guilds.Models;
 
-namespace Rumble.Platform.GuildService.Services;
+namespace Rumble.Platform.Guilds.Services;
 
 public class MemberService : MinqService<GuildMember>
 {
@@ -23,13 +23,6 @@ public class MemberService : MinqService<GuildMember>
         _history = history;
     }
 
-    public GuildMember Register(GuildMember member) => mongo
-        .Where(query => query
-            .EqualTo(db => db.GuildId, member.GuildId)
-            .EqualTo(db => db.AccountId, member.AccountId)
-        )
-        .Upsert(member);
-
     public GuildMember[] Lookup(string guildId, params string[] accountIds) => mongo
         .Where(query => query
             .EqualTo(member => member.GuildId, guildId)
@@ -37,22 +30,24 @@ public class MemberService : MinqService<GuildMember>
         )
         .ToArray();
 
-    public GuildMember ApproveApplication(string guildId, string applicantId, string officerId)
+    public GuildMember ApproveApplication(string applicantId, string officerId)
     {
-        GuildMember[] lookups = Lookup(guildId, applicantId, officerId);
-        GuildMember officer = lookups.FirstOrDefault(member => member.AccountId == officerId && member.Rank >= Rank.Officer);
-        GuildMember applicant = lookups.FirstOrDefault(member => member.AccountId == applicantId && member.Rank == Rank.Applicant);
-
-        if (officer == null)
-            throw new PlatformException("Requesting player is not an officer of the specified guild and can not approve new members.", code: ErrorCode.Unauthorized);
-        if (applicant == null)
-            throw new PlatformException("No applicant found.  The player may have withdrawn their application or already been actioned on.", code: ErrorCode.MongoRecordNotFound);
+        EnsureSourceOutranksTarget(applicantId, officerId, out GuildMember applicant, out GuildMember officer);
+        
+        // GuildMember[] lookups = Lookup(guildId, applicantId, officerId);
+        // GuildMember officer = lookups.FirstOrDefault(member => member.AccountId == officerId && member.Rank >= Rank.Officer);
+        // GuildMember applicant = lookups.FirstOrDefault(member => member.AccountId == applicantId && member.Rank == Rank.Applicant);
+        //
+        // if (officer == null)
+        //     throw new PlatformException("Requesting player is not an officer of the specified guild and can not approve new members.", code: ErrorCode.Unauthorized);
+        // if (applicant == null)
+        //     throw new PlatformException("No applicant found.  The player may have withdrawn their application or already been actioned on.", code: ErrorCode.MongoRecordNotFound);
 
         // Find all other guild applications. 
         List<GuildMember> existing = mongo
             .WithTransaction(out Transaction transaction)
             .Where(query => query
-                .NotEqualTo(member => member.GuildId, guildId)
+                .NotEqualTo(member => member.GuildId, officer.GuildId)
                 .EqualTo(member => member.AccountId, applicant.AccountId)
             )
             .ToList();
@@ -71,9 +66,9 @@ public class MemberService : MinqService<GuildMember>
         // Approve the existing application and mark the applicant as a full member.
         GuildMember output = mongo
             .WithTransaction(transaction)
-            .OnRecordsAffected(_ => Log.Local(Owner.Will, $"Enrolled {applicant.AccountId} into guild {guildId}"))
+            .OnRecordsAffected(_ => Log.Local(Owner.Will, $"Enrolled {applicant.AccountId} into guild {officer.GuildId}"))
             .Where(query => query
-                .EqualTo(member => member.GuildId, guildId)
+                .EqualTo(member => member.GuildId, officer.GuildId)
                 .EqualTo(member => member.AccountId, applicant.AccountId)
                 .EqualTo(member => member.Rank, applicant.Rank)
             )
@@ -99,6 +94,35 @@ public class MemberService : MinqService<GuildMember>
         return output;
     }
 
+    private void EnsureSourceOutranksTarget(string victimId, string officerId, out GuildMember victim, out GuildMember officer)
+    {
+        victim = null;
+        officer = null;
+
+        if (string.IsNullOrWhiteSpace(victimId) || string.IsNullOrWhiteSpace(officerId))
+            return;
+        
+        GuildMember[] members = mongo
+            .Where(query => query.ContainedIn(member => member.AccountId, new[] { victimId, officerId }))
+            .Limit(200)
+            .ToArray()
+            .GroupBy(member => member.GuildId)
+            .MaxBy(group => group.Count())
+            ?.ToArray()
+            ?? Array.Empty<GuildMember>();
+
+        if (members.Length != 2)
+            throw new PlatformException("Unable to kick player; the two members are not in the same guild.", code: ErrorCode.Unauthorized);
+
+        victim = members.First(member => member.AccountId == victimId);
+        officer = members.First(member => member.AccountId == officerId);
+
+        if (officer.Rank < Rank.Officer)
+            throw new PlatformException("Unable to affect player; requester is not an officer.", code: ErrorCode.Unauthorized);
+        if (victim.Rank >= officer.Rank)
+            throw new PlatformException("Unable to affect player; requester is not high enough rank.", code: ErrorCode.Unauthorized);
+    }
+
     // Scenario 1: Guild member is leaving of their own accord
     // Scenario 2: Guild leader is leaving
     // Scenario 3: Guild leader is leaving and is the only member
@@ -107,28 +131,8 @@ public class MemberService : MinqService<GuildMember>
     public GuildMember Leave(string accountId, string kickedBy = null)
     {
         // Ensure that the user making the kick request has permissions to perform the action.
-        if (!string.IsNullOrWhiteSpace(kickedBy))
-        {
-            GuildMember[] members = mongo
-                .Where(query => query.ContainedIn(member => member.AccountId, new[] {accountId, kickedBy}))
-                .Limit(200)
-                .ToArray()
-                .GroupBy(member => member.GuildId)
-                .MaxBy(group => group.Count())
-                ?.ToArray()
-                ?? Array.Empty<GuildMember>();
-
-            if (members.Length != 2)
-                throw new PlatformException("Unable to kick player; the two members are not in the same guild.", code: ErrorCode.Unauthorized);
-
-            GuildMember kicker = members.First(member => member.AccountId == kickedBy);
-            GuildMember recipient = members.First(member => member.AccountId == accountId);
-
-            if (kicker.Rank < Rank.Officer)
-                throw new PlatformException("Unable to kick player; requester is not an officer.", code: ErrorCode.Unauthorized);
-            if (recipient.Rank >= kicker.Rank)
-                throw new PlatformException("Unable to kick player; requester is not high enough rank.", code: ErrorCode.Unauthorized);
-        }
+        
+        EnsureSourceOutranksTarget(accountId, kickedBy, out _, out _);
         
         GuildMember departing = mongo
             .WithTransaction(out Transaction transaction)
@@ -154,34 +158,93 @@ public class MemberService : MinqService<GuildMember>
         Commit(transaction);
         return departing;
     }
+    
+    // Leaders are inactive; promote the next eligible person for that guild.
+    public GuildMember AlterRank(string accountId, string officerId, bool upwards = false)
+    {
+        EnsureSourceOutranksTarget(accountId, officerId, out GuildMember victim, out GuildMember officer);
 
-    private GuildMember PromoteNextInLine(Transaction transaction, string guildId, string promotedBy) => mongo
-        .WithTransaction(transaction)
-        .OnNoneAffected(_ =>
-        {
-            Log.Info(Owner.Will, "Leader left guild with no other members, it will be deleted.", data: new
+        if (victim.Rank <= Rank.Member)
+            throw new PlatformException("Unable to demote member; they're already at the lowest rank.", code: ErrorCode.Unnecessary);
+
+        GuildMember altered = mongo
+            .WithTransaction(out Transaction transaction)
+            .Where(query => query
+                .EqualTo(member => member.GuildId, victim.GuildId)
+                .EqualTo(member => member.AccountId, victim.AccountId)
+            )
+            .UpdateAndReturnOne(update => update
+                .Set(member => member.UpdatedBy, officer.AccountId)
+                .Set(member => member.Rank, victim.Rank switch
+                {
+                    Rank.Member when upwards => Rank.Elder,
+                    Rank.Elder when upwards => Rank.Officer,
+                    Rank.Officer when upwards => Rank.Leader,
+                    Rank.Elder => Rank.Member,
+                    Rank.Officer => Rank.Elder,
+                    _ => throw new PlatformException("Unable to alter rank; invalid rank.", code: ErrorCode.Ineligible)
+                })
+            );
+        
+        // Guild leader promoted someone else
+        if (altered.Rank == Rank.Leader)
+            mongo
+                .WithTransaction(transaction)
+                .Where(query => query
+                    .EqualTo(member => member.GuildId, officer.GuildId)
+                    .EqualTo(member => member.AccountId, officer.AccountId)
+                )
+                .Update(update => update.Set(member => member.Rank, Rank.Officer));
+        
+        Commit(transaction);
+        return altered;
+    }
+
+    private GuildMember PromoteNextInLine(Transaction transaction, string guildId, string promotedBy)
+    {
+        GuildMember supremeLeader = mongo
+            .WithTransaction(transaction)
+            .OnNoneAffected(_ =>
+            {
+                Log.Info(Owner.Will, "Leader left guild with no other eligible leadership, it will be deleted.", data: new
+                {
+                    GuildId = guildId
+                });
+            })
+            .OnRecordsAffected(_ => Log.Info(Owner.Will, "A different member was promoted to leader.", data: new
             {
                 GuildId = guildId
-            });
-            // TODO: Delete guild
-        })
-        .OnRecordsAffected(_ => Log.Info(Owner.Will, "A different member was promoted to leader.", data: new
-        {
-            GuildId = guildId
-        }))
-        .Where(query => query
-            .EqualTo(member => member.GuildId, guildId)
-            .LessThan(member => member.Rank, Rank.Leader)
-            .GreaterThan(member => member.Rank, Rank.Applicant)
-        )
-        .Sort(query => query
-            .OrderByDescending(member => member.Rank)
-            .OrderByDescending(member => member.JoinedOn)
-        )
-        .UpdateAndReturnOne(update => update
-            .Set(member => member.Rank, Rank.Leader)
-            .Set(member => member.PromotedBy, promotedBy)
-        );
+            }))
+            .Where(query => query
+                .EqualTo(member => member.GuildId, guildId)
+                .LessThan(member => member.Rank, Rank.Leader)
+                .GreaterThan(member => member.Rank, Rank.Applicant)
+                .GreaterThanOrEqualTo(member => member.LastActive, Timestamp.OneMonthAgo)
+            )
+            .Sort(query => query
+                .OrderByDescending(member => member.Rank)
+                .ThenByDescending(member => member.JoinedOn)
+            )
+            .UpdateAndReturnOne(update => update
+                .Set(member => member.Rank, Rank.Leader)
+                .Set(member => member.UpdatedBy, promotedBy)
+            );
+
+        if (supremeLeader != null)
+            return supremeLeader;
+        
+        // Promotion was not possible; all remaining members are inactive or otherwise ineligible to become leader.
+        mongo
+            .WithTransaction(transaction)
+            .Where(query => query
+                .EqualTo(member => member.GuildId, guildId)
+                .LessThan(member => member.Rank, Rank.Leader)
+            )
+            .Delete();
+
+        Require<GuildService>().Delete(transaction, guildId);
+        return null;
+    }
 
     public GuildMember[] GetRoster(string guildId, bool includeApplicants = false) => mongo
         .Where(query => query
@@ -191,7 +254,18 @@ public class MemberService : MinqService<GuildMember>
                 : Rank.Member
             )
         )
-        .Sort(sort => sort.OrderByDescending(member => member.Rank))
+        .Sort(sort => sort
+            .OrderByDescending(member => member.Rank)
+            .ThenBy(member => member.JoinedOn)
+        )
         .Limit(100)
+        .ToArray();
+
+    public GuildMember[] GetInactiveLeaders() => mongo
+        .Where(query => query
+            .EqualTo(member => member.Rank, Rank.Leader)
+            .LessThan(member => member.LastActive, Timestamp.OneMonthAgo)
+        )
+        .Limit(10_000)
         .ToArray();
 }

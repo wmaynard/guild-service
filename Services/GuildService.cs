@@ -2,9 +2,9 @@ using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Minq;
 using Rumble.Platform.Common.Utilities;
-using Rumble.Platform.GuildService.Models;
+using Rumble.Platform.Guilds.Models;
 
-namespace Rumble.Platform.GuildService.Services;
+namespace Rumble.Platform.Guilds.Services;
 
 public class GuildService : MinqService<Guild>
 {
@@ -21,22 +21,32 @@ public class GuildService : MinqService<Guild>
         _members = members;
     }
 
-    public GuildMember Join(string id, string accountId)
+    public Guild Join(string id, string accountId)
     {
-        Guild desired = mongo.ExactId(id).First();
+        Guild desired = FromId(id);
 
-        return _members.Register(new GuildMember
+        GuildMember registrant = new()
         {
             AccountId = accountId,
             GuildId = desired.Id,
-            Rank = desired.Type switch
+            JoinedOn = Timestamp.Now,
+            Rank = desired.Access switch
             {
-                GuildType.Open => Rank.Member,
-                GuildType.Closed => Rank.Applicant,
-                GuildType.Private => throw new PlatformException("Joining this guild requires an invitation.", code: ErrorCode.Unauthorized),
+                AccessLevel.Public => Rank.Member,
+                AccessLevel.Closed => Rank.Applicant,
+                AccessLevel.Private => throw new PlatformException("Joining this guild requires an invitation.", code: ErrorCode.Unauthorized),
                 _ => throw new PlatformException("Invalid guild type.", code: ErrorCode.InvalidRequestData)
             }
-        });
+        };
+        
+        _members.Insert(registrant);
+
+        desired.Members = desired
+            .Members
+            .Union(new[] { registrant })
+            .ToArray();
+
+        return desired;
     }
 
     public Guild[] Search(params string[] terms) => mongo
@@ -46,14 +56,16 @@ public class GuildService : MinqService<Guild>
 
     public override Guild FromId(string id)
     {
-        Guild output = base.FromId(id);
-        output.Members = _members.GetRoster(id);
+        Guild output = base.FromId(id)
+            ?? throw new PlatformException("Guild not found.", code: ErrorCode.MongoRecordNotFound);
+        output.Members = _members.GetRoster(id, true);
         return output;
     }
 
     public Guild Create(Guild guild, string leaderId)
     {
         Insert(guild);
+        // TODO: Transactions
         try
         {
             _members.Leave(leaderId);
@@ -76,4 +88,9 @@ public class GuildService : MinqService<Guild>
         guild.Members = new [] { leader };
         return guild;
     }
+
+    public void Delete(Transaction transaction, string guildId) => mongo
+        .WithTransaction(transaction)
+        .ExactId(guildId)
+        .Delete();
 }

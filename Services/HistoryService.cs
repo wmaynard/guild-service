@@ -1,9 +1,9 @@
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Minq;
 using Rumble.Platform.Common.Utilities;
-using Rumble.Platform.GuildService.Models;
+using Rumble.Platform.Guilds.Models;
 
-namespace Rumble.Platform.GuildService.Services;
+namespace Rumble.Platform.Guilds.Services;
 
 public class HistoryService : MinqTimerService<GuildMember>
 {

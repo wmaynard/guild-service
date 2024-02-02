@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Rumble.Platform.GuildService;
+namespace Rumble.Platform.Guilds;
 
 public class Program
 {
