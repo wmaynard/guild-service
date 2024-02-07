@@ -155,12 +155,15 @@ public class MemberService : MinqService<GuildMember>
     {
         // Ensure that the user making the kick request has permissions to perform the action.
         EnsureSourceOutranksTarget(accountId, kickedBy, out _, out _);
-        
+
         GuildMember departing = mongo
             .WithTransaction(transaction)
             .Where(query => query.EqualTo(member => member.AccountId, accountId))
-            .FirstOrDefault()
-            ?? throw new PlatformException("Account is not a member of a guild.", code: ErrorCode.MongoRecordNotFound);
+            .FirstOrDefault();
+            // ?? throw new PlatformException("Account is not a member of a guild.", code: ErrorCode.MongoRecordNotFound);
+
+        if (departing == null)
+            return null;
         
         // Promote the next in line if necessary
         GuildMember promoted = string.IsNullOrWhiteSpace(departing.GuildId) && departing.Rank == Rank.Leader
