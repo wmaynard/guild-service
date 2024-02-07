@@ -27,7 +27,17 @@ public class TopController : PlatformController
         Guild guild = Require<Guild>("guild");
         string accountId = Require<string>(TokenInfo.FRIENDLY_KEY_ACCOUNT_ID);
         
-        _guilds.Create(guild, accountId);
+        guild.Members = new[] 
+        {
+            new GuildMember
+            {
+                AccountId = accountId,
+                JoinedOn = Timestamp.Now,
+                Rank = Rank.Leader
+            }
+        };
+        
+        _guilds.Create(guild);
 
         return Ok(guild);
     }
@@ -63,7 +73,7 @@ public class TopController : PlatformController
     [HttpDelete, Route("leave")]
     public ActionResult Leave()
     {
-        _members.Leave(Token.AccountId);
+        _members.Remove(Token.AccountId);
 
         return Ok();
     }
@@ -75,7 +85,7 @@ public class TopController : PlatformController
     {
         string accountId = Require<string>(TokenInfo.FRIENDLY_KEY_ACCOUNT_ID);
 
-        _members.Leave(accountId, kickedBy: Token.AccountId);
+        _members.Remove(accountId, kickedBy: Token.AccountId);
 
         return Ok();
     }
@@ -92,16 +102,20 @@ public class TopController : PlatformController
     }
 
     [HttpGet, Route("search")]
-    public ActionResult Search() => Ok(_guilds.Search());
+    public ActionResult Search() => Ok(_guilds.Search(Require<string>("terms").Split(',')));
 
     [HttpGet]
     public ActionResult GetGuildDetails()
     {
-        string guildId = Require<string>("guildId");
+        string guildId = Optional<string>("guildId");
+        
+        guildId ??= _members.FindGuildIdFromToken(Token.AccountId)
+            ?? throw new PlatformException("No guildId specified or player not in a guild; cannot retrieve guild details.", code: ErrorCode.MongoRecordNotFound);
 
         Guild output = _guilds.FromId(guildId);
         bool isGuildMember = output.Members.Any(member => member.AccountId == Token.AccountId && member.Rank > Rank.Applicant);
-        if (!isGuildMember)
+        
+        if (!isGuildMember || output.IsFull)
             output.Members = output.Members
                 .Where(member => member.Rank > Rank.Applicant)
                 .ToArray();
@@ -112,6 +126,10 @@ public class TopController : PlatformController
     [HttpPatch, Route("update")]
     public ActionResult EditGuild()
     {
-        return Ok();
+        Guild guild = Require<Guild>("guild");
+        
+        Guild updated = _guilds.ModifyDetails(guild, Token.AccountId);
+        
+        return Ok(updated);
     }
 }

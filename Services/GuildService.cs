@@ -1,7 +1,12 @@
+using RCL.Logging;
 using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
+using Rumble.Platform.Common.Extensions;
+using Rumble.Platform.Common.Interfaces;
 using Rumble.Platform.Common.Minq;
 using Rumble.Platform.Common.Utilities;
+using Rumble.Platform.Guilds.Exceptions;
+using Rumble.Platform.Guilds.Interop;
 using Rumble.Platform.Guilds.Models;
 
 namespace Rumble.Platform.Guilds.Services;
@@ -15,6 +20,15 @@ public class GuildService : MinqService<Guild>
         mongo
             .DefineIndex(builder => builder
                 .Add(guild => guild.Name)
+                .SetName("uniqueName")
+                .EnforceUniqueConstraint()
+            );
+        
+        mongo
+            .DefineIndex(builder => builder
+                .Add(guild => guild.Id)
+                .Add(guild => guild.ChatRoomId)
+                .SetName("uniqueChatRoom")
                 .EnforceUniqueConstraint()
             );
 
@@ -24,6 +38,8 @@ public class GuildService : MinqService<Guild>
     public Guild Join(string id, string accountId)
     {
         Guild desired = FromId(id);
+        if (desired.IsFull)
+            throw new GuildFullException(id);
 
         GuildMember registrant = new()
         {
@@ -46,13 +62,26 @@ public class GuildService : MinqService<Guild>
             .Union(new[] { registrant })
             .ToArray();
 
+        ChatService.TryUpdateRoom(desired);
+
         return desired;
     }
 
-    public Guild[] Search(params string[] terms) => mongo
-        .All()
-        .Limit(100)
-        .ToArray();
+    public Guild[] Search(params string[] terms)
+    {
+        Guild[] output = mongo
+            .Where(query => query.GreaterThan(guild => guild.CreatedOn, Timestamp.OneWeekAgo))
+            .Search(terms);
+
+        Guild[] foo = mongo.Search(terms);
+
+        if (!output.Any())
+            return output;
+        
+        // _members.LoadAccountIds(ref output);
+
+        return output;
+    } 
 
     public override Guild FromId(string id)
     {
@@ -62,30 +91,33 @@ public class GuildService : MinqService<Guild>
         return output;
     }
 
-    public Guild Create(Guild guild, string leaderId)
+    public Guild Create(Guild guild)
     {
-        Insert(guild);
-        // TODO: Transactions
+        // Copy() here is a kluge to get around the fact that this wipes out the roster list
+        ChatService.Create(guild.Copy(), out ChatService.ChatRoom room);
+
+        guild.ChatRoomId = room.Id;
+
+        Transaction transaction = null;
         try
         {
-            _members.Leave(leaderId);
-        }
-        catch (PlatformException e) // TODO: Custom exceptions
-        {
-            if (e.Code != ErrorCode.MongoRecordNotFound)
-                throw;
-        }
+            mongo
+                .WithTransaction(out transaction)
+                .Insert(guild);
 
-        GuildMember leader = new()
-        {
-            AccountId = leaderId,
-            GuildId = guild.Id,
-            JoinedOn = Timestamp.Now,
-            Rank = Rank.Leader
-        };
-        _members.Insert(leader);
+            _members.Remove(transaction, guild.Leader.AccountId);
+            _members.Insert(transaction, guild.Leader);
         
-        guild.Members = new [] { leader };
+            Commit(transaction);
+        }
+        catch
+        {
+            Log.Error(Owner.Will, "Failed to create guild; attempting rollback of chat room.");
+            ChatService.Delete(guild);
+            Abort(transaction);
+            throw;
+        }
+        
         return guild;
     }
 
@@ -93,4 +125,33 @@ public class GuildService : MinqService<Guild>
         .WithTransaction(transaction)
         .ExactId(guildId)
         .Delete();
+
+    public Guild ModifyDetails(Guild guild, string officerId)
+    {
+        GuildMember officer = _members.GetRegistration(guild.Id, officerId);
+
+        if (officer.Rank < Rank.Officer)
+            throw new PlatformException("Member is not an officer.", code: ErrorCode.Unauthorized);
+
+        return mongo
+            .ExactId(guild.Id)
+            .Limit(1)
+            .UpdateAndReturnOne(update => update
+                .Set(db => db.Name, guild.Name)
+                .Set(db => db.Language, guild.Language)
+                .Set(db => db.Region, guild.Region)
+                .Set(db => db.Access, guild.Access)
+                .Set(db => db.RequiredLevel, guild.RequiredLevel)
+                .Set(db => db.Description, guild.Description)
+                .Set(db => db.IconData, guild.IconData)
+            )
+            ?? throw new PlatformException("Unable to update guild details.");
+    }
+
+    public string[] FindGuildsInNeedOfSync(int limit) => mongo
+        .Where(query => query.LessThanOrEqualTo(guild => guild.LastChatSync, Timestamp.OneHourAgo))
+        .Limit(limit)
+        .UpdateAndReturn(update => update.SetToCurrentTimestamp(guild => guild.LastChatSync))
+        .Select(guild => guild.Id)
+        .ToArray();
 }

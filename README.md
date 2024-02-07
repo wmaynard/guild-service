@@ -39,6 +39,7 @@ Because guild creation is gated by resource spend, this endpoint must be routed 
 ```
 POST /create
 {
+    "accountId": "deadbeefdeadbeefdeadbeef",
     "guild": {
         "name": "Avalanche",
         "language": "en-US",
@@ -83,7 +84,7 @@ HTTP 200
                 "createdOn": 1706858868
             }
         ],
-        "id": null,
+        "id": "65c3ffd2e549849f681be2ea",
         "createdOn": 1706861398
     }
 }
@@ -104,7 +105,7 @@ Sucessfully joining a guild forces players out of existing membership, if any.  
 * Closed Guild: Player is added to the guild as an applicant.  An officer must approve them before they become an official member.
 * Private Guild: Stubbed / not currently supported; will require an invitation to join a guild.
 
-Currently, guilds have no member cap (coming soon).
+Guild member cap is defined in Dynamic Config (`capacity`).  The default value is 20.
 
 ```
 POST /join
@@ -116,6 +117,13 @@ Response:
 HTTP 200
 {
     "guild": { ... }
+}
+
+Notable Error:
+HTTP 400
+{
+    "message": "Unable to perform update; guild is full.",
+    "errorCode": "PLATF-3001: Ineligible"
 }
 ```
 
@@ -129,6 +137,12 @@ DELETE /leave
 Response:
 HTTP 204 (empty)
 ```
+
+* When the last member of a guild leaves, that guild will be destroyed.
+* If the leader of a guild leaves, the successor is chosen:
+  * Take the array of all members above Applicant level
+  * Order by descending rank, then by descending join date
+  * Promote the first member in the array to Leader.
 
 ## Kicking a Guild Member
 
@@ -152,7 +166,9 @@ HTTP 400
 
 Viewing guild details requires a `guildId`.  You can view guilds you're not a member of, including member lists, but you can only see the applicant list for one you _are_ a member of.
 
-Unlike some of the endpoints you've seen so far, the `guildId` here is required because it saves an extra database hit, whereas comparing the relationship between two players requires two lookups even if the ID is provided.
+Unlike some of the endpoints you've seen so far, the `guildId` here should be provided because it saves an extra database hit, whereas comparing the relationship between two players requires two lookups even if the ID is provided.
+
+**Note:** if you _don't_ provide the `guildId`, you will get the guild you're currently enrolled in or an error if you are not in one.  This is less performant though and best practice is to avoid this.
 
 ```
 GET {base url}?guildId=65bca0705a1498d3a4d22d7c
@@ -219,8 +235,32 @@ HTTP 200
         "createdOn": 1706861850
     }
 }
+
+Notable Errors:
+HTTP 400
+{
+    "message": "Unable to affect player; requester is not an officer.",
+    "errorCode": "PLATF-0101: Unauthorized"
+}
+HTTP 400
+{
+    "message": "Unable to perform update; guild is full.",
+    "errorCode": "PLATF-3001: Ineligible"
+}
+
 ```
 
 # Guild Chat
 
-Not currently implemented.  Chat V2 will handle all Guild Chat as a private room; more details will be found here as to how guild-service modifies the chat-service room once added.
+Guild chat functionality is actually handled by chat-service, not guilds.  Guilds manages a chat room's participants and room data, but otherwise has no knowledge of what is happening on the chat side of things.  Consequently, there are no endpoints to manage Guild chat in this project.
+
+The following actions impact a guild's chat room:
+
+* Creating a guild
+* Joining a guild
+* Approving an applicant
+* Kicking a member
+
+Guilds takes care of these events automatically.  There is also a background task that runs as a redundancy to make sure rooms stay updated.  For example, if someone leaves the guild but chat was down at the time, the membership update would have failed.  Failed room updates are retried.  Guilds are resynced with chat any time a membership change is detected and around once per hour.
+
+However, when creating a guild, if the chat room creation _also_ fails, the entire request is rejected.  In this way, guilds has a dependency on chat; we don't want a situation where a guild does not have chat.

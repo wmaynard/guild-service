@@ -4,6 +4,8 @@ using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Minq;
 using Rumble.Platform.Common.Utilities;
+using Rumble.Platform.Guilds.Exceptions;
+using Rumble.Platform.Guilds.Interop;
 using Rumble.Platform.Guilds.Models;
 
 namespace Rumble.Platform.Guilds.Services;
@@ -29,6 +31,23 @@ public class MemberService : MinqService<GuildMember>
             .ContainedIn(member => member.AccountId, accountIds)
         )
         .ToArray();
+
+    private void EnsureGuildNotFull(Transaction transaction, string guildId)
+    {
+        bool isFull = mongo
+            .WithTransaction(transaction)
+            .Where(query => query
+                .EqualTo(member => member.GuildId, guildId)
+                .GreaterThan(member => member.Rank, Rank.Applicant)
+            )
+            .Count() > Guild.CAPACITY;
+
+        if (!isFull)
+            return;
+        
+        Abort(transaction);
+        throw new GuildFullException(guildId);
+    }
 
     public GuildMember ApproveApplication(string applicantId, string officerId)
     {
@@ -63,6 +82,8 @@ public class MemberService : MinqService<GuildMember>
             .Where(query => query.ContainedIn(member => member.Id, existing.Select(other => other.Id)))
             .Delete();
         
+        EnsureGuildNotFull(transaction, officer.GuildId);
+        
         // Approve the existing application and mark the applicant as a full member.
         GuildMember output = mongo
             .WithTransaction(transaction)
@@ -91,6 +112,8 @@ public class MemberService : MinqService<GuildMember>
         }
         
         Commit(transaction);
+
+        ChatService.TryUpdateRoom(officer.GuildId);
         return output;
     }
 
@@ -128,14 +151,13 @@ public class MemberService : MinqService<GuildMember>
     // Scenario 3: Guild leader is leaving and is the only member
     // Scenario 4: Guild officer or leader is kicking someone else out
     // Scenario 5: Guild officer or leader is rejecting an applicant
-    public GuildMember Leave(string accountId, string kickedBy = null)
+    public GuildMember Remove(Transaction transaction, string accountId, string kickedBy = null)
     {
         // Ensure that the user making the kick request has permissions to perform the action.
-        
         EnsureSourceOutranksTarget(accountId, kickedBy, out _, out _);
         
         GuildMember departing = mongo
-            .WithTransaction(out Transaction transaction)
+            .WithTransaction(transaction)
             .Where(query => query.EqualTo(member => member.AccountId, accountId))
             .FirstOrDefault()
             ?? throw new PlatformException("Account is not a member of a guild.", code: ErrorCode.MongoRecordNotFound);
@@ -155,8 +177,19 @@ public class MemberService : MinqService<GuildMember>
             .Where(query => query.EqualTo(member => member.AccountId, accountId))
             .Delete();
         
-        Commit(transaction);
+        ChatService.TryUpdateRoom(departing.GuildId);
+        
         return departing;
+    }
+    
+    public GuildMember Remove(string accountId, string kickedBy = null)
+    {
+        mongo.WithTransaction(out Transaction transaction);
+        
+        GuildMember output = Remove(transaction, accountId, kickedBy);
+        Commit(transaction);
+        
+        return output;
     }
     
     // Leaders are inactive; promote the next eligible person for that guild.
@@ -268,4 +301,44 @@ public class MemberService : MinqService<GuildMember>
         )
         .Limit(10_000)
         .ToArray();
+
+    public void Insert(Transaction transaction, GuildMember member) => mongo
+        .WithTransaction(transaction)
+        .Insert(member);
+
+    public GuildMember GetRegistration(string guildId, string accountId) => mongo
+        .Where(query => query
+            .EqualTo(member => member.GuildId, guildId)
+            .EqualTo(member => member.AccountId, accountId)
+        )
+        .First();
+
+    public void LoadAccountIds(ref Guild[] guilds)
+    {
+        string[] guildIds = guilds.Select(guild => guild.Id).ToArray();
+        GuildMember[] all = mongo
+            .Where(query => query
+                .ContainedIn(member => member.GuildId, guildIds)
+                .GreaterThan(member => member.Rank, Rank.Applicant)
+            )
+            .ToArray();
+
+        if (all.Any())
+            return;
+
+        foreach (IGrouping<string, GuildMember> group in all.GroupBy(member => member.GuildId))
+            guilds.First(guild => guild.Id == group.Key).Members = group.ToArray();
+    }
+
+
+    public string FindGuildIdFromToken(string accountId) => mongo
+        .Where(query => query
+            .EqualTo(member => member.AccountId, accountId)
+            .NotEqualTo(member => member.GuildId, null)
+        )
+        .Sort(sort => sort.OrderBy(member => member.CreatedOn))
+        .Limit(1)
+        .Project(member => member.GuildId)
+        .FirstOrDefault();
+
 }
