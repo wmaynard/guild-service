@@ -132,7 +132,7 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
                 Log.Local(Owner.Will, "Updated guild room");
                 output = response.Require<ChatRoom>("room");
             })
-            .Post(out _, out int code);
+            .Patch(out _, out int code);
 
         room = output;
         return code.Between(200, 299);

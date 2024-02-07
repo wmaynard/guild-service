@@ -104,6 +104,7 @@ public class GuildService : MinqService<Guild>
             mongo
                 .WithTransaction(out transaction)
                 .Insert(guild);
+            guild.Leader.GuildId = guild.Id;
 
             _members.Remove(transaction, guild.Leader.AccountId);
             _members.Insert(transaction, guild.Leader);
