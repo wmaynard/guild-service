@@ -150,7 +150,8 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
                 { "data", new RumbleJson
                 {
                     { "guild", guild }
-                }}
+                }},
+                { "channel", 2 } // 0 is None, 1 is Global, 2 is Guild
             })
             .OnFailure(response => Log.Error(Owner.Will, "Unable to delete guild room.", data: new
             {
