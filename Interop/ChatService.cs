@@ -1,5 +1,6 @@
 using MongoDB.Bson.Serialization.Attributes;
 using RCL.Logging;
+using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Extensions;
 using Rumble.Platform.Common.Minq;
 using Rumble.Platform.Common.Models;
@@ -81,10 +82,12 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
                 { "data", new RumbleJson
                 {
                     { "guild", guild }
-                }}
+                }},
+                { "channel", 2 } // 0 is None, 1 is Global, 2 is Guild
             })
             .OnFailure(response => Log.Error(Owner.Will, "Unable to create guild room.", data: new
             {
+                Guild = guild,
                 Response = response
             }))
             .OnSuccess(response =>
@@ -94,6 +97,9 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
             .Post(out _, out int code);
 
         room = output;
+        if (room == null)
+            throw new PlatformException("Unable to create guild chat room; guild creation failed.");
+        
         return code.Between(200, 299);
     }
     private bool UpdatePrivateRoom(Guild guild, out ChatRoom room)
@@ -142,7 +148,7 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
     {
         guild.Members = null;
         
-        Request("/chat/admin/rooms/new")
+        Request("/chat/admin/rooms/update")
             .SetPayload(new RumbleJson
             {
                 { "roomId", guild.ChatRoomId },
@@ -150,8 +156,7 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
                 { "data", new RumbleJson
                 {
                     { "guild", guild }
-                }},
-                { "channel", 2 } // 0 is None, 1 is Global, 2 is Guild
+                }}
             })
             .OnFailure(response => Log.Error(Owner.Will, "Unable to delete guild room.", data: new
             {
