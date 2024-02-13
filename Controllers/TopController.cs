@@ -21,7 +21,7 @@ public class TopController : PlatformController
     private readonly HistoryService _history;
     #pragma warning restore
     
-    [HttpPost, Route("create"), RequireAuth(AuthType.ADMIN_TOKEN)] // TODO: Needs to be admin
+    [HttpPost, Route("create"), RequireAuth(AuthType.ADMIN_TOKEN)]
     public ActionResult Create()
     {
         Guild guild = Require<Guild>("guild");
