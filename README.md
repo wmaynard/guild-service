@@ -195,7 +195,9 @@ HTTP 200{
 
 ## Guild Search
 
-Not currently implemented.  The endpoint is just a stub and returns all guilds.
+Guild search takes a string, `terms`, and returns weighted results based on the search.  The string can be either CSV separated or whitespace separated.  When searching with whitespace, this searches on the whole string as well as the split components.  For example, searching `foo bar` searches for `foo bar,foo,bar`, with `foo bar` carrying the most weight because it is the longest term.  This is just a brief summary of how search works; for the full documentation and limitations of this feature, refer to platform-common's `MINQ.md > Searching with MINQ` section.
+
+Private guilds are not searchable.
 
 ```
 GET /search?terms=foo%20bar

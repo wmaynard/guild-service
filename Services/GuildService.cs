@@ -70,10 +70,8 @@ public class GuildService : MinqService<Guild>
     public Guild[] Search(params string[] terms)
     {
         Guild[] output = mongo
-            .Where(query => query.GreaterThan(guild => guild.CreatedOn, Timestamp.OneWeekAgo))
+            .Where(query => query.LessThan(guild => guild.Access, AccessLevel.Private))
             .Search(terms);
-
-        Guild[] foo = mongo.Search(terms);
 
         if (!output.Any())
             return output;
