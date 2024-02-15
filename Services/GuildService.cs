@@ -67,6 +67,9 @@ public class GuildService : MinqService<Guild>
         return desired;
     }
 
+    // TODO
+    public Guild[] Browse() => mongo.All().ToArray();
+
     public Guild[] Search(params string[] terms)
     {
         Guild[] output = mongo
