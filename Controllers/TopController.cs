@@ -102,7 +102,10 @@ public class TopController : PlatformController
     }
 
     [HttpGet, Route("search")]
-    public ActionResult Search() => Ok(_guilds.Search(Require<string>("terms").Split(',')));
+    public ActionResult Search() => Ok(new RumbleJson
+    {
+        { "guilds", _guilds.Search(Require<string>("terms").Split(',')) }
+    });
 
     [HttpGet]
     public ActionResult GetGuildDetails()
