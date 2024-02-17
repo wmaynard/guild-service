@@ -113,7 +113,7 @@ public class MemberService : MinqService<GuildMember>
         
         Commit(transaction);
 
-        ChatService.TryUpdateRoom(officer.GuildId);
+        Optional<GuildService>().PerformGuildUpdateTasks(officer.GuildId);
         return output;
     }
 
@@ -180,7 +180,7 @@ public class MemberService : MinqService<GuildMember>
             .Where(query => query.EqualTo(member => member.AccountId, accountId))
             .Delete();
         
-        ChatService.TryUpdateRoom(departing.GuildId);
+        Optional<GuildService>().PerformGuildUpdateTasks(departing.GuildId);
         
         return departing;
     }

@@ -59,6 +59,10 @@ public class Guild : PlatformCollectionDocument, ISearchable<Guild>
     [BsonIgnore]
     [JsonPropertyName("members")]
     public GuildMember[] Members { get; set; }
+    
+    [BsonElement("members")]
+    [JsonPropertyName("memberCount")]
+    public int MemberCount { get; set; }
 
     [BsonIgnore]
     [JsonPropertyName("capacity")]

@@ -179,20 +179,6 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
 
     public static bool Create(Guild guild, out ChatRoom room) => Require<ChatService>().CreatePrivateRoom(guild, out room);
     public static bool Update(Guild guild, out ChatRoom room) => Require<ChatService>().UpdatePrivateRoom(guild, out room);
-    public static void TryUpdateRoom(string guildId) => Task.Run(() =>
-    {
-         try
-         {
-             Update(Require<GuildService>().FromId(guildId), out _);
-         }
-         catch (Exception e)
-         {
-             Log.Error(Owner.Will, "Unable to update guild room asynchronously.", data: new
-             {
-                 GuildId = guildId
-             }, exception: e);
-         }
-    });
     public static void TryUpdateRoom(Guild guild) => Task.Run(() =>
     {
         try

@@ -14,6 +14,7 @@ namespace Rumble.Platform.Guilds.Services;
 public class GuildService : MinqService<Guild>
 {
     private readonly MemberService _members;
+    private EventHandler _onGuildUpdate;
     
     public GuildService(MemberService members) : base("guilds")
     {
@@ -33,6 +34,17 @@ public class GuildService : MinqService<Guild>
             );
 
         _members = members;
+    }
+
+    public void PerformGuildUpdateTasks(string guildId)
+    {
+        Guild updated = FromId(guildId);
+        mongo
+            .ExactId(updated.Id)
+            .Update(update => update.Set(guild => guild.MemberCount, updated.Members.Length));
+        
+        // Has to happen last because this prunes the member count
+        ChatService.TryUpdateRoom(updated);
     }
 
     public Guild Join(string id, string accountId)
@@ -62,7 +74,7 @@ public class GuildService : MinqService<Guild>
             .Union(new[] { registrant })
             .ToArray();
 
-        ChatService.TryUpdateRoom(desired);
+        PerformGuildUpdateTasks(desired.Id);
 
         return desired;
     }

@@ -29,7 +29,7 @@ public class ChatUpdater : QueueService<ChatUpdater.ChatUpdateTask>
         CreateUntrackedTasks(tasks);
     }
 
-    protected override void ProcessTask(ChatUpdateTask data) => ChatService.TryUpdateRoom(data.GuildId);
+    protected override void ProcessTask(ChatUpdateTask data) => _guilds.PerformGuildUpdateTasks(data.GuildId);
     
     public class ChatUpdateTask : PlatformDataModel
     {
