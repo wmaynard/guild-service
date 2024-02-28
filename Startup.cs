@@ -1,5 +1,6 @@
 using RCL.Logging;
 using Rumble.Platform.Common.Enums;
+using Rumble.Platform.Common.Minq;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Common.Web;
@@ -16,12 +17,6 @@ public class Startup : PlatformStartup
         .SetRegistrationName("Guild Service")
         .DisableFeatures(CommonFeature.ConsoleObjectPrinting)
         .SetPerformanceThresholds(warnMS: 5_000, errorMS: 20_000, criticalMS: 300_000)
-        .OnReady(_ =>
-        {
-            #if DEBUG
-            // PlatformService.Require<MemberService>().WipeDatabase();
-            // PlatformService.Require<HistoryService>().WipeDatabase();
-            // PlatformService.Require<GuildService>().WipeDatabase();
-            #endif
-        });
+        .WipeLocalDatabasesOnStartup()
+        .OnReady(_ => { });
 }

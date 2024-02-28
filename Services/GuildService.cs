@@ -106,10 +106,6 @@ public class GuildService : MinqService<Guild>
 
     public Guild Create(Guild guild)
     {
-        // Copy() here is a kluge to get around the fact that this wipes out the roster list
-        ChatService.Create(guild.Copy(), out ChatService.ChatRoom room);
-
-        guild.ChatRoomId = room.Id;
 
         Transaction transaction = null;
         try
@@ -121,6 +117,15 @@ public class GuildService : MinqService<Guild>
 
             _members.Remove(transaction, guild.Leader.AccountId);
             _members.Insert(transaction, guild.Leader);
+            
+            
+            // Copy() here is a kluge to get around the fact that this wipes out the roster list
+            ChatService.Create(guild.Copy(), out ChatService.ChatRoom room);
+            guild.ChatRoomId = room.Id;
+
+            mongo
+                .WithTransaction(transaction)
+                .Update(guild);
         
             Commit(transaction);
         }

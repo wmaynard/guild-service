@@ -67,7 +67,10 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
     }
     
     private static ApiRequest Request(string url) => ApiService.Instance?
-        .Request(url)
+        .Request(PlatformEnvironment.MongoConnectionString.Contains("localhost")
+            ? $"http://localhost:5011{url}"
+            : url
+        )
         .AddAuthorization(DynamicConfig.Instance.AdminToken);
     
     private bool CreatePrivateRoom(Guild guild, out ChatRoom room)
