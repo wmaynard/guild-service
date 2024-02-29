@@ -18,33 +18,50 @@ public class GuildService : MinqService<Guild>
     
     public GuildService(MemberService members) : base("guilds")
     {
-        mongo
-            .DefineIndex(builder => builder
+        mongo.DefineIndexes(
+            builder => builder
                 .Add(guild => guild.Name)
                 .SetName("uniqueName")
-                .EnforceUniqueConstraint()
-            );
-        
-        mongo
-            .DefineIndex(builder => builder
+                .EnforceUniqueConstraint(),
+            builder => builder
                 .Add(guild => guild.Id)
                 .Add(guild => guild.ChatRoomId)
                 .SetName("uniqueChatRoom")
                 .EnforceUniqueConstraint()
-            );
+        );
+        //
+        // mongo
+        //     .DefineIndex(builder => builder
+        //         .Add(guild => guild.Name)
+        //         .SetName("uniqueName")
+        //         .EnforceUniqueConstraint()
+        //     );
+        //
+        // mongo
+        //     .DefineIndex(builder => builder
+        //         .Add(guild => guild.Id)
+        //         .Add(guild => guild.ChatRoomId)
+        //         .SetName("uniqueChatRoom")
+        //         .EnforceUniqueConstraint()
+        //     );
 
         _members = members;
     }
 
     public void PerformGuildUpdateTasks(string guildId)
     {
-        Guild updated = FromId(guildId);
-        mongo
-            .ExactId(updated.Id)
-            .Update(update => update.Set(guild => guild.MemberCount, updated.Members.Length));
-        
-        // Has to happen last because this prunes the member count
-        ChatService.TryUpdateRoom(updated);
+        try
+        {
+            Guild updated = FromId(guildId);
+            if (updated == null)
+                return;
+            mongo
+                .ExactId(updated.Id)
+                .Update(update => update.Set(guild => guild.MemberCount, updated.Members.Length));
+            // Has to happen last because this prunes the member count
+            ChatService.TryUpdateRoom(updated);
+        }
+        catch { }
     }
 
     public Guild Join(string id, string accountId)
@@ -58,6 +75,7 @@ public class GuildService : MinqService<Guild>
             AccountId = accountId,
             GuildId = desired.Id,
             JoinedOn = Timestamp.Now,
+            LastActive = Timestamp.Now,
             Rank = desired.Access switch
             {
                 AccessLevel.Public => Rank.Member,
@@ -66,8 +84,18 @@ public class GuildService : MinqService<Guild>
                 _ => throw new PlatformException("Invalid guild type.", code: ErrorCode.InvalidRequestData)
             }
         };
-        
-        _members.Insert(registrant);
+
+        mongo.WithTransaction(out Transaction transaction);
+        try
+        {
+            _members.Remove(transaction, accountId);
+            _members.Insert(transaction, registrant);
+            Commit(transaction);
+        }
+        catch (Exception e)
+        {
+            Abort(transaction);
+        }
 
         desired.Members = desired
             .Members
@@ -106,10 +134,10 @@ public class GuildService : MinqService<Guild>
 
     public Guild Create(Guild guild)
     {
-
         Transaction transaction = null;
         try
         {
+            guild.MemberCount = 1;
             mongo
                 .WithTransaction(out transaction)
                 .Insert(guild);
@@ -117,6 +145,7 @@ public class GuildService : MinqService<Guild>
 
             _members.Remove(transaction, guild.Leader.AccountId);
             _members.Insert(transaction, guild.Leader);
+            _members.MarkAccountsActive(guild.Leader.AccountId);
             
             
             // Copy() here is a kluge to get around the fact that this wipes out the roster list
@@ -140,10 +169,18 @@ public class GuildService : MinqService<Guild>
         return guild;
     }
 
-    public void Delete(Transaction transaction, string guildId) => mongo
-        .WithTransaction(transaction)
-        .ExactId(guildId)
-        .Delete();
+    public void Delete(Transaction transaction, string guildId)
+    {
+        Guild toDelete = mongo
+            .WithTransaction(transaction)
+            .ExactId(guildId)
+            .FirstOrDefault();
+        ChatService.Delete(toDelete);
+        mongo
+            .WithTransaction(transaction)
+            .ExactId(guildId)
+            .Delete();
+    }
 
     public Guild ModifyDetails(Guild guild, string officerId)
     {

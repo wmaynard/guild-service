@@ -166,7 +166,7 @@ public class MemberService : MinqService<GuildMember>
             return null;
         
         // Promote the next in line if necessary
-        GuildMember promoted = string.IsNullOrWhiteSpace(departing.GuildId) && departing.Rank == Rank.Leader
+        GuildMember promoted = !string.IsNullOrWhiteSpace(departing.GuildId) && departing.Rank == Rank.Leader
             ? PromoteNextInLine(transaction, departing.GuildId, departing.AccountId)
             : null;
 
@@ -343,5 +343,10 @@ public class MemberService : MinqService<GuildMember>
         .Limit(1)
         .Project(member => member.GuildId)
         .FirstOrDefault();
+
+    public long MarkAccountsActive(params string[] accountIds) => mongo
+        .Where(query => query.ContainedIn(member => member.AccountId, accountIds))
+        .OnRecordsAffected(result => Log.Local(Owner.Will, $"Marked {result.Affected} accounts as active."))
+        .Update(update => update.SetToCurrentTimestamp(member => member.LastActive));
 
 }
