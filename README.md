@@ -5,7 +5,7 @@ A service for guild structure and management.
 This service allows for `guilds` to be created, managed, deleted, or used in other intended ways.
 
 A `guild` is constructed of a `name`, a `description`, a `type`, a `level requirement`, an optional piece of `art`, a `leader`, `members`, a `bans` list. 
-This is subject to change in the future as new features are required. The current `types` that exist are as follows: `Private`, `Public`, and `Closed`.
+This is subject to change in the future as new features are required. The current `types` that exist are as follows: `Invite Only`, `Public`, and `Private`.
 The current member `positions` that exist are as follows: `Member`, `Officer`, and `Leader`.
 
 A `member` consists of a `name`, a `playerId`, a `position`, and a `lastActive` timestamp.
@@ -16,7 +16,7 @@ A `history` consists of a `guildId`, a `log`, an `internalLog`, and a `timestamp
 
 | Term      | Definition                                                                                                                                                                                                             |
 |:----------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Access    | How "open" a guild is.  Guilds can be Public (anyone can join), Closed (requires application), or Private (requires invite).  Private guilds never show up in Search.                                                  |
+| Access    | How "open" a guild is.  Guilds can be Public (anyone can join), Private (requires application), or Invite Only.  Invite Only guilds never show up in Search.                                                           |
 | Applicant | The lowest form of Member.  Applicants can not participate in Chat.  Applicants can be members of any number of guilds until an application is accepted by a guild, at which point, previous applications are deleted. |
 | Ban       | An upgraded Kick.  Bans entirely prevent account IDs from ever discovering the guild, preventing reapplication / rejoining.  Very useful to stop abuse where someone is kicked, changes their name, and rejoins.       | 
 | Chat      | Shorthand for "Guild Chat".  Chat is managed entirely on chat-service, and is a private room that is updated by guild-service.                                                                                         |
@@ -44,7 +44,7 @@ POST /create
         "name": "Avalanche",
         "language": "en-US",
         "region": "us",
-        "access": 0,                                   // 0: Public, 1: Closed, 2: Private
+        "access": 0,                                   // 0: Public, 1: Private, 2: Invite Only
         "requiredLevel": 10,                           // Stubbed!  Won't do anything, but it's in the roadmap
         "description": "Lorem ipsum dolor sit amet",
         "iconData": {                                  // Platform has no idea what this data is; purely for client usage.  Can be any JSON.
@@ -99,11 +99,11 @@ HTTP 400
 
 ## Joining a Guild
 
-Sucessfully joining a guild forces players out of existing membership, if any.  For Closed guilds, this happens on application approval.
+Sucessfully joining a guild forces players out of existing membership, if any.  For Private guilds, this happens on application approval.
 
 * Open Guild: Player is added to the guild and chat immediately.
-* Closed Guild: Player is added to the guild as an applicant.  An officer must approve them before they become an official member.
-* Private Guild: Stubbed / not currently supported; will require an invitation to join a guild.
+* Private Guild: Player is added to the guild as an applicant.  An officer must approve them before they become an official member.
+* Invite Only Guild: Stubbed / not currently supported; will require an invitation to join a guild.
 
 Guild member cap is defined in Dynamic Config (`capacity`).  The default value is 20.
 
@@ -197,7 +197,7 @@ HTTP 200{
 
 Guild search takes a string, `terms`, and returns weighted results based on the search.  The string can be either CSV separated or whitespace separated.  When searching with whitespace, this searches on the whole string as well as the split components.  For example, searching `foo bar` searches for `foo bar,foo,bar`, with `foo bar` carrying the most weight because it is the longest term.  This is just a brief summary of how search works; for the full documentation and limitations of this feature, refer to platform-common's `MINQ.md > Searching with MINQ` section.
 
-Private guilds are not searchable.
+Invite Only guilds are not searchable.
 
 ```
 GET /search?terms=foo%20bar
@@ -211,7 +211,7 @@ HTTP 200
 
 ## Approving Applicants
 
-Any officer can approve applicants.  Applicants are a rank only seen in Closed guilds.
+Any officer can approve applicants.  Applicants are a rank only seen in Private guilds.
 
 ```
 PATCH /approve

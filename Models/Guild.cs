@@ -88,7 +88,7 @@ public class Guild : PlatformCollectionDocument, ISearchable<Guild>
             errors.Add("Guild description is too long.");
 
         // TODO: less brittle check here
-        Access = (AccessLevel)Math.Max(Math.Min((int)Access, (int)AccessLevel.Private), (int)AccessLevel.Public);
+        Access = (AccessLevel)Math.Max(Math.Min((int)Access, (int)AccessLevel.InviteOnly), (int)AccessLevel.Public);
     }
     #endregion
 
@@ -106,7 +106,7 @@ public class Guild : PlatformCollectionDocument, ISearchable<Guild>
 public enum AccessLevel
 {
     Public = 0,
-    Closed = 1,
-    Private = 2
+    Private = 1,
+    InviteOnly = 2
 }
 

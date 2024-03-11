@@ -70,6 +70,9 @@ public class GuildService : MinqService<Guild>
         if (desired.IsFull)
             throw new GuildFullException(id);
 
+        if (desired.Members.Any(member => member.AccountId == accountId))
+            throw new PlatformException("You're already a member of this guild.");
+
         GuildMember registrant = new()
         {
             AccountId = accountId,
@@ -79,8 +82,8 @@ public class GuildService : MinqService<Guild>
             Rank = desired.Access switch
             {
                 AccessLevel.Public => Rank.Member,
-                AccessLevel.Closed => Rank.Applicant,
-                AccessLevel.Private => throw new PlatformException("Joining this guild requires an invitation.", code: ErrorCode.Unauthorized),
+                AccessLevel.Private => Rank.Applicant,
+                AccessLevel.InviteOnly => throw new PlatformException("Joining this guild requires an invitation.", code: ErrorCode.Unauthorized),
                 _ => throw new PlatformException("Invalid guild type.", code: ErrorCode.InvalidRequestData)
             }
         };
@@ -113,7 +116,7 @@ public class GuildService : MinqService<Guild>
     public Guild[] Search(params string[] terms)
     {
         Guild[] output = mongo
-            .Where(query => query.LessThan(guild => guild.Access, AccessLevel.Private))
+            .Where(query => query.LessThan(guild => guild.Access, AccessLevel.InviteOnly))
             .Search(terms);
 
         if (!output.Any())

@@ -9,6 +9,8 @@
         <RootNamespace>Rumble.Platform.Guilds</RootNamespace>
         <Deterministic>false</Deterministic>
         <LangVersion>12</LangVersion>
+        <Configurations>Debug;Release;UnitTest</Configurations>
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>

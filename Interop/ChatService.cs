@@ -16,7 +16,7 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
 {
     private readonly GuildService _guilds;
     
-    public ChatService(GuildService guilds) : base("chat_retries", IntervalMs.OneHour) => _guilds = guilds;
+    public ChatService(GuildService guilds) : base("chat_retries", IntervalMs.TenMinutes) => _guilds = guilds;
 
     public class UpdateRetry : PlatformCollectionDocument
     {
@@ -118,11 +118,11 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
             .SetPayload(new RumbleJson
             {
                 { "roomId", guild.ChatRoomId },
-                { "accountIds", accountIds }
-                // { "data", new RumbleJson
-                // {
-                //     { "guild", guild }
-                // }}
+                { "accountIds", accountIds },
+                { "data", new RumbleJson
+                {
+                    { "guild", guild }
+                }}
             })
             .OnFailure(response =>
             {
