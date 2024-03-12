@@ -73,6 +73,10 @@ public class Guild : PlatformCollectionDocument, ISearchable<Guild>
     
     [BsonIgnore, JsonIgnore]
     public GuildMember Leader => Members.First(member => member.Rank == Rank.Leader);
+    
+    [BsonIgnore]
+    [JsonPropertyName("outstandingApplicant"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool TokenIsOutstandingApplicant { get; set; }
 
     protected override void Validate(out List<string> errors)
     {

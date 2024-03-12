@@ -109,10 +109,17 @@ public class TopController : PlatformController
         Guild[] results = string.IsNullOrWhiteSpace(terms)
             ? _guilds.Browse()
             : _guilds.Search(terms);
+
+        string[] guildsAppliedTo = _members.GetOutstandingApplications(Token.AccountId);
+        
+        if (guildsAppliedTo.Any())
+            foreach (Guild guild in results.Where(result => guildsAppliedTo.Contains(result.Id)))
+                guild.TokenIsOutstandingApplicant = true;
         
         return Ok(new RumbleJson
         {
-            { "guilds", results }
+            { "guilds", results },
+            { "guildsAppliedTo", guildsAppliedTo }
         });
     } 
 

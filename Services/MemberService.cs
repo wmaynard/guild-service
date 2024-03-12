@@ -349,4 +349,10 @@ public class MemberService : MinqService<GuildMember>
         .OnRecordsAffected(result => Log.Local(Owner.Will, $"Marked {result.Affected} accounts as active."))
         .Update(update => update.SetToCurrentTimestamp(member => member.LastActive));
 
+    public string[] GetOutstandingApplications(string accountId) => mongo
+        .Where(query => query
+            .EqualTo(member => member.AccountId, accountId)
+            .EqualTo(member => member.Rank, Rank.Applicant)
+        )
+        .Project(member => member.GuildId);
 }
