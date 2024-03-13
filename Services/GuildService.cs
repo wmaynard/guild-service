@@ -57,7 +57,7 @@ public class GuildService : MinqService<Guild>
                 return;
             mongo
                 .ExactId(updated.Id)
-                .Update(update => update.Set(guild => guild.MemberCount, updated.Members.Length));
+                .Update(update => update.Set(guild => guild.MemberCount, updated.Members.Count(member => member.Rank > Rank.Applicant)));
             // Has to happen last because this prunes the member count
             ChatService.TryUpdateRoom(updated);
         }

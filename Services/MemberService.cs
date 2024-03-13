@@ -338,6 +338,7 @@ public class MemberService : MinqService<GuildMember>
         .Where(query => query
             .EqualTo(member => member.AccountId, accountId)
             .NotEqualTo(member => member.GuildId, null)
+            .NotEqualTo(member => member.Rank, Rank.Applicant)
         )
         .Sort(sort => sort.OrderBy(member => member.CreatedOn))
         .Limit(1)
