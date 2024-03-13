@@ -27,7 +27,7 @@ public class ActivityFilter : PlatformFilter, IAuthorizationFilter
 
         long affected = PlatformService
             .Optional<MemberService>()
-            ?.MarkAccountsActive(_activePlayers.ToArray())
+            ?.MarkAccountsActive(null, _activePlayers.ToArray())
             ?? 0;
         
         if (affected > 0)

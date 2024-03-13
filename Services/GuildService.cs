@@ -29,21 +29,6 @@ public class GuildService : MinqService<Guild>
                 .SetName("uniqueChatRoom")
                 .EnforceUniqueConstraint()
         );
-        //
-        // mongo
-        //     .DefineIndex(builder => builder
-        //         .Add(guild => guild.Name)
-        //         .SetName("uniqueName")
-        //         .EnforceUniqueConstraint()
-        //     );
-        //
-        // mongo
-        //     .DefineIndex(builder => builder
-        //         .Add(guild => guild.Id)
-        //         .Add(guild => guild.ChatRoomId)
-        //         .SetName("uniqueChatRoom")
-        //         .EnforceUniqueConstraint()
-        //     );
 
         _members = members;
     }
@@ -148,7 +133,20 @@ public class GuildService : MinqService<Guild>
 
             _members.Remove(transaction, guild.Leader.AccountId);
             _members.Insert(transaction, guild.Leader);
-            _members.MarkAccountsActive(guild.Leader.AccountId);
+            
+            // TODO: Major Mongo performance issue encountered here.
+            // Previously, this action was not included in the transaction.  Whether or not an account is marked as active
+            // is really independent of what needs to happen for guild creation, so it was omitted.  However, this caused
+            // a really strange lock state in Mongo; it was taking 70+ seconds to execute the update.  It appears that
+            // the transaction had this write locked, but the code wouldn't continue on until the transaction was either
+            // committed or aborted.  I would have expected Mongo to accept the update, and merge the change on its own.
+            // This doesn't happen, so it needs to be included in the transaction.  Why this wasn't a problem earlier
+            // is a mystery.
+            // It's worth an investigation to see if we can improve MINQ so that it can queue writes like this up and only
+            // run them after a transaction finishes, or alternatively run the transaction after regular updates execute
+            // (likely much harder to do).
+            _members.MarkAccountsActive(transaction, guild.Leader.AccountId);
+            
             
             
             // Copy() here is a kluge to get around the fact that this wipes out the roster list

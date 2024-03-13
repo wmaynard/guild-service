@@ -166,7 +166,7 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
                 Response = response
             }))
             .OnSuccess(_ => Log.Info(Owner.Will, "Chat room deleted."))
-            .Post(out _, out int code);
+            .Patch(out _, out int code);
         
         return code.Between(200, 299);
     }

@@ -345,7 +345,8 @@ public class MemberService : MinqService<GuildMember>
         .Project(member => member.GuildId)
         .FirstOrDefault();
 
-    public long MarkAccountsActive(params string[] accountIds) => mongo
+    public long MarkAccountsActive(Transaction transaction, params string[] accountIds) => mongo
+        .WithTransaction(transaction)
         .Where(query => query.ContainedIn(member => member.AccountId, accountIds))
         .OnRecordsAffected(result => Log.Local(Owner.Will, $"Marked {result.Affected} accounts as active."))
         .Update(update => update.SetToCurrentTimestamp(member => member.LastActive));
