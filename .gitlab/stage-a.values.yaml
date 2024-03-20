@@ -42,6 +42,7 @@ hpa:
     enabled: true
     requestsPerSecond: "10"
     serverAddress: http://prometheus-server.gitlab-managed-apps.svc:80
+    MemUtilizationPercentage: 95
 gitlab:
   app:
   env:
