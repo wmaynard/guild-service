@@ -107,11 +107,11 @@ postgresql:
 
 resources:
   limits:
-    cpu: 128m
-    memory: 128Mi
+    cpu: null
+    memory: 576Mi
   requests:
-    cpu: 128m
-    memory: 128Mi
+    cpu: 200m
+    memory: 512Mi
 
 ## Configure PodDisruptionBudget
 ## ref: https://kubernetes.io/docs/concepts/workloads/pods/disruptions/
