@@ -180,8 +180,6 @@ public class MemberService : MinqService<GuildMember>
             .Where(query => query.EqualTo(member => member.AccountId, accountId))
             .Delete();
         
-        Optional<GuildService>().PerformGuildUpdateTasks(departing.GuildId);
-        
         return departing;
     }
     
@@ -191,6 +189,8 @@ public class MemberService : MinqService<GuildMember>
         
         GuildMember output = Remove(transaction, accountId, kickedBy);
         Commit(transaction);
+        
+        Optional<GuildService>().PerformGuildUpdateTasks(output.GuildId);
         
         return output;
     }

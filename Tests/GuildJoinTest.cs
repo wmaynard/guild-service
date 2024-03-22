@@ -7,7 +7,7 @@ using Rumble.Platform.Guilds.Models;
 
 namespace Rumble.Platform.Guilds.Tests;
 
-[TestParameters(tokens: 19)]
+[TestParameters(tokens: 19, timeout: 60_000)]
 [Covers(typeof(TopController), nameof(TopController.Join))]
 [DependentOn(typeof(CreatePublicGuildTest))]
 public class JoinGuildTest : PlatformUnitTest
@@ -23,6 +23,7 @@ public class JoinGuildTest : PlatformUnitTest
     public override void Execute()
     {
         Guild guild = null;
+        
         for (int i = 0; i < 19; i++)
         {
             TokenInfo token = TryGetToken(i);
@@ -34,7 +35,7 @@ public class JoinGuildTest : PlatformUnitTest
         
             Assert("JSON returned", response != null);
             Assert("Request successful", code.Between(200, 299));
-
+        
             guild = response.Require<Guild>("guild");
             Assert("Response has a guild in it", guild != null, abortOnFail: true);
             Assert("Guild has members", guild.Members.Any(member => member.AccountId == Token.AccountId));
