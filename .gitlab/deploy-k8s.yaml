@@ -9,6 +9,13 @@
     K8S_SECRET_RUMBLE_REGION: "US"
   allow_failure: true
   script:
+  - kubectl config use-context $KUBE_CONTEXT
+  - auto-deploy check_kube_domain
+  - auto-deploy download_chart
+  - auto-deploy ensure_namespace
+  - auto-deploy create_secret
+  - auto-deploy deploy
+  after_script:
   - |-
     PAYLOAD=$(cat << JSON
     {
@@ -20,15 +27,20 @@
     }
     JSON
     )
-  - echo $PAYLOAD
-  - kubectl config use-context $KUBE_CONTEXT
-  - auto-deploy check_kube_domain
-  - auto-deploy download_chart
-  - auto-deploy ensure_namespace
-  - auto-deploy create_secret
+  - |-
+    SLACKPAYLOAD=$(cat << JSON
+    {
+      "username": "Server Build Bot",
+      "channel": "C01RZRUPMFG",
+      "icon_emoji": ":server:",
+      "blocks": [{"type": "section", "text": {"type":"mrkdwn", "text": "Deployment of ${CI_PROJECT_NAME} to ${CI_ENVIRONMENT_NAME} via Job <#${CI_JOB_ID}|${CI_JOB_URL} *${CI_JOB_STATUS}*"}}]
+    }
+    JSON
+    )
   - >
     curl --location --http1.1 --request POST "https://grafana.rumblegames.com/api/annotations" --header 'Content-Type: application/json' --header "Authorization: Bearer $GRAFANA_TOKEN" --data "${PAYLOAD}" || true
-  - auto-deploy deploy
+  - >
+    curl -X POST -H "Authorization: Bearer $SLACK_LOG_BOT_TOKEN" -H 'Content-type: application/json; charset=utf-8' --data "${SLACKPAYLOAD}" https://slack.com/api/chat.postMessage || true
   rules:
   - if: '$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH'
     when: never
@@ -78,17 +90,17 @@ stage-a:
 #     name: stage-a
 #     url: https://stage-a.nonprod.tower.cdrentertainment.com/
 stage-b:
-   extends: .auto-deploy
-   stage: staging
-   needs: ["dev"]
-   tags:
-     - cluster
-   variables:
-     KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
-     KUBE_NAMESPACE: "guild-service-stage-b"
-   environment:
-     name: stage-b
-     url: https://stage-b.nonprod.tower.cdrentertainment.com/
+  extends: .auto-deploy
+  stage: staging
+  needs: ["dev"]
+  tags:
+  - cluster
+  variables:
+    KUBE_INGRESS_BASE_DOMAIN: nonprod.tower.cdrentertainment.com
+    KUBE_NAMESPACE: "guild-service-stage-b"
+  environment:
+    name: stage-b
+    url: https://stage-b.nonprod.tower.cdrentertainment.com/
 
 # stage-c:
 #   extends: .auto-deploy
