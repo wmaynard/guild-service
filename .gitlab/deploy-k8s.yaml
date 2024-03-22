@@ -30,11 +30,11 @@
   - |-
     SLACKPAYLOAD=$(cat << JSON
     {
-      "username": "Server Build Bot",
+      "username": "${CI_PROJECT_NAME}",
       "channel": "C013XKM281J",
       "icon_emoji": ":server:",
       "unfurl_links": "false",
-      "blocks": [{"type": "section", "text": {"type":"mrkdwn", "text": "Deployment status: *${CI_JOB_STATUS}* - ${CI_PROJECT_NAME} - Env: ${CI_ENVIRONMENT_NAME} Job: <${CI_JOB_URL}|#${CI_JOB_ID}>"}}]
+      "blocks": [{"type": "section", "text": {"type":"mrkdwn", "text": "Deployment Status: *${CI_JOB_STATUS}* - Env: ${CI_ENVIRONMENT_NAME} - Job: <${CI_JOB_URL}|#${CI_JOB_ID}>"}}]
     }
     JSON
     )
