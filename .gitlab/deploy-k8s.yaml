@@ -33,6 +33,7 @@
       "username": "Server Build Bot",
       "channel": "C013XKM281J",
       "icon_emoji": ":server:",
+      "unfurl_links": "false",
       "blocks": [{"type": "section", "text": {"type":"mrkdwn", "text": "Deployment status: *${CI_JOB_STATUS}* - ${CI_PROJECT_NAME} - Env: ${CI_ENVIRONMENT_NAME} Job: <${CI_JOB_URL}|#${CI_JOB_ID}>"}}]
     }
     JSON
