@@ -7,15 +7,16 @@ using Rumble.Platform.Guilds.Models;
 
 namespace Rumble.Platform.Guilds.Tests;
 
-[TestParameters(tokens: 19, timeout: 60_000)]
+[TestParameters(tokens: REGULAR_MEMBERS, timeout: 60_000)]
 [Covers(typeof(TopController), nameof(TopController.Join))]
-[DependentOn(typeof(CreatePublicGuildTest))]
-public class JoinGuildTest : PlatformUnitTest
+[DependentOn(typeof(CreatePublicGuild))]
+public class JoinGuild : PlatformUnitTest
 {
+    public const int REGULAR_MEMBERS = 5;
     private Guild GuildToJoin { get; set; }
     public override void Initialize()
     {
-        GetTestResults(typeof(CreatePublicGuildTest), out RumbleJson response);
+        GetTestResults(typeof(CreatePublicGuild), out RumbleJson response);
 
         GuildToJoin = response.Require<Guild>("guild");
     }
@@ -24,7 +25,7 @@ public class JoinGuildTest : PlatformUnitTest
     {
         Guild guild = null;
         
-        for (int i = 0; i < 19; i++)
+        for (int i = 0; i < REGULAR_MEMBERS; i++)
         {
             TokenInfo token = TryGetToken(i);
             Assert("Token not null", token != null);
@@ -41,7 +42,7 @@ public class JoinGuildTest : PlatformUnitTest
             Assert("Guild has members", guild.Members.Any(member => member.AccountId == Token.AccountId));
         }
 
-        Assert("Guild is full of distinct members", guild.Members.Distinct().Count() == 20);
+        Assert("Guild is full of distinct members", guild.Members.Distinct().Count() == REGULAR_MEMBERS + 1);
     }
 
     public override void Cleanup() { }
