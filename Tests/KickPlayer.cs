@@ -1,4 +1,6 @@
 using Rumble.Platform.Common.Enums;
+using Rumble.Platform.Common.Extensions;
+using Rumble.Platform.Common.Models;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Testing;
 using Rumble.Platform.Common.Utilities;
@@ -11,8 +13,8 @@ namespace Rumble.Platform.Guilds.Tests;
 
 [TestParameters(tokens: 0)]
 [Covers(typeof(TopController), nameof(TopController.Kick))]
-[DependentOn(typeof(JoinGuildTest))]
-public class KickPlayerOutOfGuildChat : PlatformUnitTest
+[DependentOn(typeof(JoinGuild))]
+public class KickPlayer : PlatformUnitTest
 {
     private Guild TestGuild { get; set; }
     private DynamicConfig _config;
@@ -22,13 +24,9 @@ public class KickPlayerOutOfGuildChat : PlatformUnitTest
     
     public override void Initialize()
     {
-        GetTestResults(typeof(CreatePublicGuildTest), out RumbleJson response);
+        GetTestResults(typeof(CreatePublicGuild), out RumbleJson response);
 
         TestGuild = response.Require<Guild>("guild");
-        _config = PlatformService.Require<DynamicConfig>();
-        _guilds = PlatformService.Require<GuildService>();
-        _members = PlatformService.Require<MemberService>();
-        _api = PlatformService.Require<ApiService>();
     }
 
     public override void Execute()
@@ -43,13 +41,8 @@ public class KickPlayerOutOfGuildChat : PlatformUnitTest
             .OrderBy(member => member.Rank)
             .First()
             .AccountId;
-        string userToken = _api.GenerateToken(
-            accountId: victimAccountId,
-            screenname: "Doesn't Matter",
-            email: "foo@example.com",
-            discriminator: 1234,
-            audiences: Audience.GuildService | Audience.ChatService
-        );
+        string userToken = GenerateStandardToken(victimAccountId, Audience.GuildService | Audience.ChatService);
+        string leaderToken = GenerateStandardToken(TestGuild.Leader.AccountId, Audience.GuildService | Audience.ChatService); 
 
         GetGuildChatRoomsForUser(userToken, out RumbleJson[] rooms);
         Assert("Victim can see guild chat before kick", rooms.Any(room => room.Require<string>("id") == TestGuild.ChatRoomId));
@@ -57,7 +50,13 @@ public class KickPlayerOutOfGuildChat : PlatformUnitTest
         GetGuildChatRoom(out string[] members);
         Assert("Chat room contains the member we want to kick", members.Contains(victimAccountId));
 
-        _members.Remove(victimAccountId, kickedBy: TestGuild.Leader.AccountId);
+        Request(leaderToken, new RumbleJson
+        {
+            { TokenInfo.FRIENDLY_KEY_ACCOUNT_ID, victimAccountId }
+        }, out RumbleJson response, out int code);
+        Assert("JSON returned", response != null);
+        Assert("Request successful", code.Between(200, 299));
+        
         TestGuild.Members = _members.GetRoster(TestGuild.Id);
         Assert("Member has been removed from the guild.", TestGuild.Members.All(member => member.AccountId != victimAccountId));
 
@@ -97,8 +96,5 @@ public class KickPlayerOutOfGuildChat : PlatformUnitTest
         return response;
     }
 
-    public override void Cleanup()
-    {
-        
-    }
+    public override void Cleanup() { }
 }

@@ -136,11 +136,7 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
                     RoomId = guild.ChatRoomId
                 });
             })
-            .OnSuccess(response =>
-            {
-                Log.Local(Owner.Will, "Updated guild room");
-                output = response.Require<ChatRoom>("room");
-            })
+            .OnSuccess(response => output = response.Require<ChatRoom>("room"))
             .Patch(out _, out int code);
 
         room = output;
@@ -165,7 +161,7 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
             {
                 Response = response
             }))
-            .OnSuccess(_ => Log.Info(Owner.Will, "Chat room deleted."))
+            .OnSuccess(_ => { })
             .Patch(out _, out int code);
         
         return code.Between(200, 299);

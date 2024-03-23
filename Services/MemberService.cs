@@ -3,6 +3,7 @@ using RCL.Logging;
 using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Minq;
+using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Guilds.Exceptions;
 using Rumble.Platform.Guilds.Interop;
@@ -348,7 +349,7 @@ public class MemberService : MinqService<GuildMember>
     public long MarkAccountsActive(Transaction transaction, params string[] accountIds) => mongo
         .WithTransaction(transaction)
         .Where(query => query.ContainedIn(member => member.AccountId, accountIds))
-        .OnRecordsAffected(result => Log.Local(Owner.Will, $"Marked {result.Affected} accounts as active."))
+        .OnRecordsAffected(result => Log.Verbose(Owner.Will, $"Marked {result.Affected} accounts as active."))
         .Update(update => update.SetToCurrentTimestamp(member => member.LastActive));
 
     public string[] GetOutstandingApplications(string accountId) => mongo

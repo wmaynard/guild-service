@@ -12,7 +12,7 @@ namespace Rumble.Platform.Guilds.Tests;
 
 [TestParameters(tokens: 1, repetitions: 0, timeout: 30_000, abortOnFailedAssert: false)]
 [Covers(typeof(TopController), nameof(TopController.Create))]
-public class CreatePublicGuildTest : PlatformUnitTest
+public class CreatePublicGuild : PlatformUnitTest
 {
     public override void Initialize() { }
 
