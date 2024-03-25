@@ -21,10 +21,9 @@
     {
       "text": "$CI_PROJECT_NAME - Deployment Status: ${CI_JOB_STATUS} - <a href=\"$CI_PROJECT_URL/-/commit/$CI_COMMIT_SHA\">Git Commit</a> - <a href=\"$CI_PIPELINE_URL\">Pipeline Url</a>",
       "tags": [
-        "deployment",
-        "$CI_ENVIRONMENT_NAME",
-        "${CI_JOB_STATUS}",
-        "${CI_PROJECT_NAME}"
+        "${CI_PROJECT_NAME}",
+        "${CI_ENVIRONMENT_NAME}",
+        "${CI_JOB_STATUS}"
       ]
     }
     JSON
