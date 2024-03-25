@@ -14,7 +14,7 @@ namespace Rumble.Platform.Guilds.Tests;
 [TestParameters(tokens: 0)]
 [Covers(typeof(TopController), nameof(TopController.Kick))]
 [DependentOn(typeof(JoinGuild))]
-public class KickPlayer : PlatformUnitTest
+public class KickMember : PlatformUnitTest
 {
     private Guild TestGuild { get; set; }
     private DynamicConfig _config;

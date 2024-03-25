@@ -194,7 +194,7 @@ public class GuildService : MinqService<Guild>
             .ExactId(guild.Id)
             .Limit(1)
             .UpdateAndReturnOne(update => update
-                .Set(db => db.Name, guild.Name)
+                // .Set(db => db.Name, guild.Name)
                 .Set(db => db.Language, guild.Language)
                 .Set(db => db.Region, guild.Region)
                 .Set(db => db.Access, guild.Access)

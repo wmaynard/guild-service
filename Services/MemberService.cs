@@ -201,7 +201,7 @@ public class MemberService : MinqService<GuildMember>
     {
         EnsureSourceOutranksTarget(accountId, officerId, out GuildMember victim, out GuildMember officer);
 
-        if (victim.Rank <= Rank.Member)
+        if (!upwards && victim.Rank <= Rank.Member)
             throw new PlatformException("Unable to demote member; they're already at the lowest rank.", code: ErrorCode.Unnecessary);
 
         GuildMember altered = mongo

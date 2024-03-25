@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Extensions;
+using Rumble.Platform.Common.Models;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Testing;
 using Rumble.Platform.Common.Utilities;
@@ -17,7 +18,7 @@ namespace Rumble.Platform.Guilds.Tests;
 
 [TestParameters(tokens: 0)]
 [Covers(typeof(TopController), nameof(TopController.Leave))]
-[DependentOn(typeof(CreatePrivateGuild))]
+[DependentOn(typeof(CreateSecondPrivateGuild))]
 public class LastMemberLeavingGuild : PlatformUnitTest
 {
     private MemberService _members;
@@ -25,7 +26,7 @@ public class LastMemberLeavingGuild : PlatformUnitTest
     private Guild Guild { get; set; }
     public override void Initialize()
     {
-        GetTestResults(typeof(CreatePrivateGuild), out RumbleJson response);
+        GetTestResults(typeof(CreateSecondPrivateGuild), out RumbleJson response);
 
         Guild = response.Require<Guild>("guild");
     }

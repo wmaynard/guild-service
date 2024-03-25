@@ -91,7 +91,7 @@ public class TopController : PlatformController
     }
 
     [HttpPatch, Route("rank")]
-    public ActionResult Demote()
+    public ActionResult AlterRank()
     {
         string accountId = Require<string>(TokenInfo.FRIENDLY_KEY_ACCOUNT_ID);
         bool isPromotion = Require<bool>("isPromotion");

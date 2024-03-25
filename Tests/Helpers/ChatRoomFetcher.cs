@@ -1,5 +1,7 @@
 using System.Net.NetworkInformation;
+using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
+using Rumble.Platform.Common.Models;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Data;
@@ -46,5 +48,17 @@ public static class ChatRoomFetcher
             .Where(room => room.GuildData?.ContainsKey("guild") ?? false)
             .ToArray();
         return chatResponse;
+    }
+
+    public static RumbleJson GetGuildChatRoomsForUser(TokenInfo token, out ChatRoom[] rooms)
+    {
+        string auth = ((Audience)token.PermissionSet).HasFlag(Audience.ChatService)
+            ? token.Authorization
+            : null;
+        auth ??= PlatformService
+            .Require<ApiService>()
+            .GenerateToken(token.AccountId, Audience.GuildService | Audience.ChatService);
+        
+        return GetGuildChatRoomsForUser(auth, out rooms);
     }
 }
