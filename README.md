@@ -252,6 +252,32 @@ HTTP 400
 
 ```
 
+## Promoting & Demoting Members
+
+Guilds currently supports 5 distinct ranks:
+
+* Applicant: Can't participate in the guild until approved by an officer.
+* Member: No special permissions.
+* Elder: No ability to modify the guild; this rank exists to show appreciation to memebrs without granting them the role of an officer.
+* Officer: Can demote / kick players and accept applicants.
+* Leader: No more than one player can hold this rank in a guild.  All the privileges of an Officer, but can also modify guild details.
+
+To promote or demote players, pass the following endpoint a player token from an officer or leader:
+
+```
+PATCH /rank
+{
+    "accountId": "deadbeefdeadbeefdeadbeef",
+    "isPromotion": true
+}
+```
+
+Players must exceed the rank of the target account for the rank change to take effect; an officer cannot promote another officer.
+
+If a leader promotes an officer, it will _also_ act as a self-demotion.  The target player will become the leader and the leader will become an officer.
+
+Members cannot be demoted; they must be kicked.
+
 # Guild Chat
 
 Guild chat functionality is actually handled by chat-service, not guilds.  Guilds manages a chat room's participants and room data, but otherwise has no knowledge of what is happening on the chat side of things.  Consequently, there are no endpoints to manage Guild chat in this project.
