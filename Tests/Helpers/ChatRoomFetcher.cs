@@ -3,6 +3,7 @@ using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
 using Rumble.Platform.Common.Models;
 using Rumble.Platform.Common.Services;
+using Rumble.Platform.Common.Testing;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Data;
 
@@ -55,9 +56,7 @@ public static class ChatRoomFetcher
         string auth = ((Audience)token.PermissionSet).HasFlag(Audience.ChatService)
             ? token.Authorization
             : null;
-        auth ??= PlatformService
-            .Require<ApiService>()
-            .GenerateToken(token.AccountId, Audience.GuildService | Audience.ChatService);
+        auth ??= PlatformUnitTest.GenerateToken(token.AccountId, Audience.GuildService | Audience.ChatService);
         
         return GetGuildChatRoomsForUser(auth, out rooms);
     }
