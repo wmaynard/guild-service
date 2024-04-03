@@ -76,7 +76,8 @@ public class GuildService : MinqService<Guild>
         mongo.WithTransaction(out Transaction transaction);
         try
         {
-            _members.Remove(transaction, accountId);
+            if (registrant.Rank != Rank.Applicant)
+                _members.Remove(transaction, accountId);
             _members.Insert(transaction, registrant);
             Commit(transaction);
         }
