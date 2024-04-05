@@ -11,11 +11,11 @@ using Rumble.Platform.Guilds.Models;
 
 namespace Rumble.Platform.Guilds.Services;
 
-public class MemberService : MinqService<GuildMember>
+public class MemberService : MinqTimerService<GuildMember>
 {
     private readonly HistoryService _history;
     
-    public MemberService(HistoryService history) : base("members")
+    public MemberService(HistoryService history) : base("members", IntervalMs.SixHours)
     {
         mongo
             .DefineIndex(builder => builder
@@ -358,4 +358,11 @@ public class MemberService : MinqService<GuildMember>
             .EqualTo(member => member.Rank, Rank.Applicant)
         )
         .Project(member => member.GuildId);
+
+    protected override void OnElapsed() => mongo
+        .Where(query => query
+            .EqualTo(member => member.Rank, Rank.Applicant)
+            .LessThanOrEqualTo(member => member.CreatedOn, Timestamp.TwoDaysAgo)
+        )
+        .Delete();
 }
