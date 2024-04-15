@@ -69,7 +69,7 @@ public class Guild : PlatformCollectionDocument, ISearchable<Guild>
     public int Capacity => CAPACITY;
     
     [BsonIgnore, JsonIgnore]
-    public bool IsFull => Members.Count(member => member.Rank > Rank.Applicant) > CAPACITY;
+    public bool IsFull => Members.Count(member => member.Rank > Rank.Applicant) >= CAPACITY;
     
     [BsonIgnore, JsonIgnore]
     public GuildMember Leader => Members.First(member => member.Rank == Rank.Leader);
