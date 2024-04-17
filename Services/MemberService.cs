@@ -2,6 +2,7 @@ using System.Reflection;
 using RCL.Logging;
 using Rumble.Platform.Common.Enums;
 using Rumble.Platform.Common.Exceptions;
+using Rumble.Platform.Common.Extensions;
 using Rumble.Platform.Common.Minq;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
@@ -50,9 +51,27 @@ public class MemberService : MinqTimerService<GuildMember>
         throw new GuildFullException(guildId);
     }
 
+    private void EnsureGuildHasRoom(string guildId)
+    {
+        if (string.IsNullOrWhiteSpace(guildId) || !guildId.CanBeMongoId())
+            throw new PlatformException("Invalid guildId.");
+        long members = mongo
+            .Where(query => query
+                .EqualTo(member => member.GuildId, guildId)
+                .GreaterThan(member => member.Rank, Rank.Applicant)
+            )
+            .Count();
+        if (members >= Guild.CAPACITY)
+            throw new GuildFullException(guildId);
+        if (members == 0)
+            throw new PlatformException("No guild members found.");
+    }
+
     public GuildMember ApproveApplication(string applicantId, string officerId)
     {
         EnsureSourceOutranksTarget(applicantId, officerId, out GuildMember applicant, out GuildMember officer);
+        EnsureGuildHasRoom(officer.GuildId);
+        
         
         // GuildMember[] lookups = Lookup(guildId, applicantId, officerId);
         // GuildMember officer = lookups.FirstOrDefault(member => member.AccountId == officerId && member.Rank >= Rank.Officer);
