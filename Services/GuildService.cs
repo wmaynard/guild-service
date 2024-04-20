@@ -191,6 +191,27 @@ public class GuildService : MinqService<Guild>
         if (officer.Rank < Rank.Officer)
             throw new PlatformException("Member is not an officer.", code: ErrorCode.Unauthorized);
 
+        Guild stored = mongo
+            .ExactId(guild.Id)
+            .First();
+
+        // TD-20447 | Expected behavior is that the guild fills up with applicants, if available.
+        if (stored.Access == AccessLevel.Private && guild.Access == AccessLevel.Public)
+            try
+            {
+                GuildMember[] members = _members.GetRoster(guild.Id);
+                int slots = Guild.CAPACITY - members.Count(member => member.Rank > Rank.Applicant);
+                GuildMember[] applicants = members
+                    .Where(member => member.Rank == Rank.Applicant)
+                    .OrderBy(member => member.CreatedOn)
+                    .Take(slots)
+                    .ToArray();
+
+                foreach (GuildMember applicant in applicants)
+                    _members.ApproveApplication(applicant.AccountId, officerId);
+            }
+            catch { }
+
         return mongo
             .ExactId(guild.Id)
             .Limit(1)
