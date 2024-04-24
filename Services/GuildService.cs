@@ -11,12 +11,12 @@ using Rumble.Platform.Guilds.Models;
 
 namespace Rumble.Platform.Guilds.Services;
 
-public class GuildService : MinqService<Guild>
+public class GuildService : MinqTimerService<Guild>
 {
     private readonly MemberService _members;
     private EventHandler _onGuildUpdate;
     
-    public GuildService(MemberService members) : base("guilds")
+    public GuildService(MemberService members) : base("guilds", interval: IntervalMs.FiveMinutes)
     {
         mongo.DefineIndexes(
             builder => builder
@@ -233,4 +233,34 @@ public class GuildService : MinqService<Guild>
         .UpdateAndReturn(update => update.SetToCurrentTimestamp(guild => guild.LastChatSync))
         .Select(guild => guild.Id)
         .ToArray();
+
+    protected override void OnElapsed()
+    {
+        Guild[] guilds = mongo
+            .Where(query => query.EqualTo(guild => guild.MemberCount, 0))
+            .Limit(10)
+            .ToArray();
+
+        foreach (Guild guild in guilds)
+        {
+            guild.Members = _members.GetRoster(guild.Id);
+            if (guild.Members.Any())
+                continue;
+            ChatService.Delete(guild);
+        }
+
+        string[] toDelete = guilds
+            .Where(guild => !guild.Members.Any())
+            .Select(guild => guild.Id)
+            .ToArray();
+
+        if (toDelete.Any())
+            mongo
+                .Where(query => query.ContainedIn(guild => guild.Id, toDelete))
+                .OnRecordsAffected(result => Log.Info(Owner.Will, "Cleaned up empty guilds.", data: new
+                {
+                    Affected = result.Affected
+                }))
+                .Delete();
+    }
 }
