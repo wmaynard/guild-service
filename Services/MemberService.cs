@@ -210,7 +210,8 @@ public class MemberService : MinqTimerService<GuildMember>
         GuildMember output = Remove(transaction, accountId, kickedBy);
         Commit(transaction);
         
-        Optional<GuildService>().PerformGuildUpdateTasks(output.GuildId);
+        if (output != null)
+            Optional<GuildService>().PerformGuildUpdateTasks(output.GuildId);
         
         return output;
     }

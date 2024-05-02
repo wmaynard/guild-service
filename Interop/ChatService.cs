@@ -78,16 +78,19 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
         string[] accountIds = guild.Members.Select(member => member.AccountId).ToArray();
         guild.Members = null;
         ChatRoom output = null;
-        Request("/chat/admin/rooms/new")
-            .SetPayload(new RumbleJson
+        RumbleJson payload = new()
+        {
+            { "accountIds", accountIds },
             {
-                { "accountIds", accountIds },
-                { "data", new RumbleJson
+                "data", new RumbleJson
                 {
                     { "guild", guild }
-                }},
-                { "channel", 2 } // 0 is None, 1 is Global, 2 is Guild
-            })
+                }
+            },
+            { "channel", 2 } // 0 is None, 1 is Global, 2 is Guild
+        };
+        Request("/chat/admin/rooms/new")
+            .SetPayload(payload)
             .OnFailure(response => Log.Error(Owner.Will, "Unable to create guild room.", data: new
             {
                 Guild = guild,
@@ -100,10 +103,15 @@ public class ChatService : MinqTimerService<ChatService.UpdateRetry>
             .Post(out _, out int code);
 
         room = output;
-        if (room == null)
-            throw new PlatformException("Unable to create guild chat room; guild creation failed.");
-        
-        return code.Between(200, 299);
+        if (room != null)
+            return code.Between(200, 299);
+            
+        Log.Info(Owner.Will, "Guild chat room creation failure details", data: new
+        {
+            Guild = guild,
+            Payload = payload
+        });
+        throw new PlatformException("Unable to create guild chat room; guild creation failed.");
     }
     private bool UpdatePrivateRoom(Guild guild, out ChatRoom room)
     {

@@ -15,7 +15,6 @@ public class Startup : PlatformStartup
         .DisableFeatures(CommonFeature.ConsoleObjectPrinting)
         .SetPerformanceThresholds(warnMS: 5_000, errorMS: 20_000, criticalMS: 300_000)
         .AddFilter<ActivityFilter>()
-        .WipeLocalDatabasesOnStartup()
         .OnReady(_ =>
         {
         });
