@@ -199,7 +199,7 @@ public class GuildService : MinqTimerService<Guild>
         if (stored.Access == AccessLevel.Private && guild.Access == AccessLevel.Public)
             try
             {
-                GuildMember[] members = _members.GetRoster(guild.Id);
+                GuildMember[] members = _members.GetRoster(guild.Id, true);
                 int slots = Guild.CAPACITY - members.Count(member => member.Rank > Rank.Applicant);
                 GuildMember[] applicants = members
                     .Where(member => member.Rank == Rank.Applicant)
