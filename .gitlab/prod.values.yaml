@@ -110,7 +110,7 @@ resources:
   limits:
     memory: 576Mi
   requests:
-    cpu: 200m
+    cpu: 100m
     memory: 512Mi
 
 ## Configure PodDisruptionBudget
