@@ -151,4 +151,12 @@ public class TopController : PlatformController
         
         return Ok(updated);
     }
+
+    [HttpPatch, Route("account")]
+    public ActionResult UpdatePlayerPowerScore()
+    {
+        Require<long>("totalHeroScore");
+        
+        return Ok();
+    }
 }
