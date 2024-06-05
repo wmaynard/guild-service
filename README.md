@@ -187,6 +187,8 @@ HTTP 200{
             "layer2": "atlas[bar]"
         },
         "members": [ ... ],
+        "memberCount": 11,
+        "guildHeroScore": 1997,
         "id": 65bca0705a1498d3a4d22d7c,
         "createdOn": 1706861398
     }
@@ -277,6 +279,25 @@ Players must exceed the rank of the target account for the rank change to take e
 If a leader promotes an officer, it will _also_ act as a self-demotion.  The target player will become the leader and the leader will become an officer.
 
 Members cannot be demoted; they must be kicked.
+
+# Guild Power Score
+
+Guild power score is a sum of its members' **Total Hero Score**.  One of the feature requests was to display this number in guild search / browse screens, but performing lookups for every guild member requires digging through thousands of database records from different services and a lot of traffic.  Instead, we can maintain this number by keeping Guild records updated directly instead of using lookups.  Since Guild Service isn't the authority on power score, this is not guaranteed to be a 100% accurate reflection of the true power score, but it is _far_ more performant, and should still be close enough.
+
+To accomplish this, there is an endpoint that should be used with the player tokens:
+
+```
+PATCH /account
+{
+    "totalHeroScore": 1997
+}
+```
+
+Whenever the game server sees a total hero score, it can call this endpoint to update Guild Service.  Guilds then tracks this number in its own databases.
+
+When a guild's membership roster changes, an aggregate query is performed that updates the **guild's** `guildHeroScore` with all of its members above the rank of Applicant.  This also happens as a background task.  As of this writing, the background task is executed every 5 minutes.  (See Interop/ChatUpdater for authoritative time duration)
+
+The `guildHeroScore` is returned with any response that returns a Guild object.
 
 # Guild Chat
 

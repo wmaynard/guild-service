@@ -33,20 +33,38 @@ public class GuildService : MinqTimerService<Guild>
         _members = members;
     }
 
-    public void PerformGuildUpdateTasks(string guildId)
+    public Guild PerformGuildUpdateTasks(string guildId)
     {
         try
         {
             Guild updated = FromId(guildId);
             if (updated == null)
-                return;
-            mongo
+                return null;
+
+            Account[] accounts = Require<AccountService>()
+                .FromAccountIds(updated
+                    .Members
+                    .Where(member => member.Rank > Rank.Applicant)
+                    .Select(member => member.AccountId)
+                    .ToArray()
+                );
+            long totalScore = accounts.Any()
+                ? accounts.Sum(account => account.TotalHeroScore)
+                : 0;
+            
+            Guild output = mongo
                 .ExactId(updated.Id)
-                .Update(update => update.Set(guild => guild.MemberCount, updated.Members.Count(member => member.Rank > Rank.Applicant)));
+                .UpdateAndReturnOne(update => update
+                    .Set(guild => guild.MemberCount, updated.Members.Count(member => member.Rank > Rank.Applicant))
+                    .Set(guild => guild.TotalHeroScore, totalScore)
+                );
             // Has to happen last because this prunes the member count
             ChatService.TryUpdateRoom(updated);
+            return output;
         }
         catch { }
+
+        return null;
     }
 
     public Guild Join(string id, string accountId)
@@ -91,9 +109,7 @@ public class GuildService : MinqTimerService<Guild>
             .Union(new[] { registrant })
             .ToArray();
 
-        PerformGuildUpdateTasks(desired.Id);
-
-        return desired;
+        return PerformGuildUpdateTasks(desired.Id);
     }
 
     // TODO

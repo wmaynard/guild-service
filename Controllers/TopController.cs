@@ -19,6 +19,7 @@ public class TopController : PlatformController
     private readonly Services.GuildService _guilds;
     private readonly MemberService _members;
     private readonly HistoryService _history;
+    private readonly AccountService _accounts;
     #pragma warning restore
     
     [HttpPost, Route("create"), RequireAuth(AuthType.ADMIN_TOKEN)]
@@ -155,8 +156,10 @@ public class TopController : PlatformController
     [HttpPatch, Route("account")]
     public ActionResult UpdatePlayerPowerScore()
     {
-        Require<long>("totalHeroScore");
+        long score = Require<long>(Account.FRIENDLY_KEY_HERO_SCORE);
+
+        Account output = _accounts.UpdateAccount(Token.AccountId, score);
         
-        return Ok();
+        return Ok(output);
     }
 }

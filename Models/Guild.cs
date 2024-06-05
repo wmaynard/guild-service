@@ -10,6 +10,7 @@ using Rumble.Platform.Common.Interfaces;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
 using Rumble.Platform.Data;
+using Rumble.Platform.Guilds.Services;
 
 namespace Rumble.Platform.Guilds.Models;
 
@@ -63,6 +64,10 @@ public class Guild : PlatformCollectionDocument, ISearchable<Guild>
     [BsonElement("members")]
     [JsonPropertyName("memberCount")]
     public int MemberCount { get; set; }
+    
+    [BsonElement("power")]
+    [JsonPropertyName("guildHeroScore")]
+    public long TotalHeroScore { get; set; }
 
     [BsonIgnore]
     [JsonPropertyName("capacity")]
