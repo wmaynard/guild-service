@@ -57,6 +57,7 @@ public class TopController : PlatformController
         //     };
 
         Guild guild = _guilds.Join(id, Token.AccountId);
+        guild.Members = _members.GetRoster(guild.Id);
 
         return Ok(guild);
     }
