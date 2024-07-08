@@ -20,6 +20,7 @@ public class TopController : PlatformController
     private readonly MemberService _members;
     private readonly HistoryService _history;
     private readonly AccountService _accounts;
+    private readonly QuestService _quests;
     #pragma warning restore
     
     [HttpPost, Route("create"), RequireAuth(AuthType.ADMIN_TOKEN)]
@@ -140,6 +141,8 @@ public class TopController : PlatformController
             output.Members = output.Members
                 .Where(member => member.Rank > Rank.Applicant)
                 .ToArray();
+        
+        _quests.LoadCompletedQuests(ref output);
 
         return Ok(output);
     }

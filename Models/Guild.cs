@@ -82,6 +82,10 @@ public class Guild : PlatformCollectionDocument, ISearchable<Guild>
     [BsonIgnore]
     [JsonPropertyName("outstandingApplicant"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool TokenIsOutstandingApplicant { get; set; }
+    
+    [BsonIgnore]
+    [JsonPropertyName("completedQuests"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public Quest[] Quests { get; set; }
 
     protected override void Validate(out List<string> errors)
     {
