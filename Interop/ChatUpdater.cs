@@ -1,5 +1,5 @@
 using Rumble.Platform.Common.Services;
-using Rumble.Platform.Data;
+using Rumble.Platform.Common.Utilities.JsonTools;
 using Rumble.Platform.Guilds.Models;
 using Rumble.Platform.Guilds.Services;
 

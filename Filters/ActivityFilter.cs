@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Rumble.Platform.Common.Filters;
 using Rumble.Platform.Common.Services;
 using Rumble.Platform.Common.Utilities;
-using Rumble.Platform.Data;
+using Rumble.Platform.Common.Utilities.JsonTools;
 using Rumble.Platform.Guilds.Services;
 
 namespace Rumble.Platform.Guilds.Filters;

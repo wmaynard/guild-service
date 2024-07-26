@@ -1,6 +1,20 @@
 # Guild Service
 A service for guild structure and management.
 
+## Acknowledgment
+
+Guild Service was originally created for Rumble Entertainment (which later became R Studios), a mobile gaming company.  The service allowed players to create their own in-game communities, with their own Chat and Leaderboards features.  This was the latest and greatest project we were working on before "armageddon", so it never saw full development.
+
+R Studios unfortunately closed its doors in July 2024.  This project has been released as open source with permission.
+
+As of this writing, there may still be existing references to Rumble's resources, such as Confluence links, but their absence doesn't have any significant impact.  Some documentation will also be missing until it can be recreated here, since with the company closure any feature specs and explainer articles originally written for Confluence / Slack channels were lost.
+
+While Rumble is shutting down, I'm grateful for the opportunities and human connections I had working there.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+
 # Introduction
 This service allows for `guilds` to be created, managed, deleted, or used in other intended ways.
 
